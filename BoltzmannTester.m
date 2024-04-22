@@ -7,7 +7,7 @@ dtas = data_all_trials{ind1};
 ind2 = randi(length(dtas)); 
 dta = dtas(ind2);
 
-Boltzmann(dta, true, [1;2], [2;1]);
+Boltzmann(dta, true);
 
 %% test all 
 
@@ -76,18 +76,23 @@ plot([boltz1, boltz2, boltz3]); grid on;
 legend('ratio', 'bayes max like', 'bayes expected', 'Location','westoutside')
 title('Boltzmann Rationality'); xlabel('rec'); 
 %}
+sessInd = find(newsess);
 figure('Units', 'normalized', 'Position', [.1,.1,.5,.8]); 
 subplot(3,1,1); 
 plot(P3); grid on; 
 title('Mean Accuracy'); 
 ylabel('probability of trial'); xlabel('rec'); 
+xticks(sessInd);
 subplot(3,1,2); 
 plot(pRew); grid on; hold on; 
-plot(find(newsess), pRew(newsess,:), '*'); 
+%plot(find(newsess), pRew(newsess,:), '*'); 
+ylim([0,1]);
 title('Reward Likelihood'); 
 ylabel('probability of high'); xlabel('rec'); 
-legend('Cue Low', 'Cue High')
+xticks(sessInd);
+legend('Cue Low', 'Cue High', 'Location','best')
 subplot(3,1,3); 
 plot(boltz3); grid on; 
 title('Boltzmann Rationality'); 
 ylabel('\beta'); xlabel('rec');
+xticks(sessInd);
