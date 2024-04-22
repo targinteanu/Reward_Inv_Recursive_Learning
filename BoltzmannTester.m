@@ -3,9 +3,9 @@ data_all_trials = Load_Analyzed_Data({'Y:\Ephys\data_132F\2024-02\', 'Y:\Ephys\d
 
 %% test random 
 ind1 = randi(length(data_all_trials));
-dta = data_all_trials{ind1};
-ind2 = randi(length(dta)); 
-dta = dta(ind2);
+dtas = data_all_trials{ind1};
+ind2 = randi(length(dtas)); 
+dta = dtas(ind2);
 
 Boltzmann(dta, true, [1;2], [2;1]);
 
