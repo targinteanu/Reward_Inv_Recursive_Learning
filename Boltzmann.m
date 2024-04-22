@@ -1,68 +1,42 @@
-%% load data to array 
+function [boltz_rat, boltz_bay1, boltz_bay2, L_rat, L_bay1, L_bay2, ...
+          alpha_end, beta_end, denom_end] = ...
+    Boltzmann(dta, depict, alpha0, beta0)
+% stateless Boltzmann decision-making 
+% Determine Boltzmann rationality during a single rec data (dta). 
+% If depict is true, details will be shown. 
+% alpha0 and beta0 define the initial prior pdf, with h ~ alpha0 
+%   and n ~ alpha0 + beta0 (i.e. MLE = alpha0/(alpha0+beta0)
 
-f_name_end = 'ANALYZED.mat';
-f_name_str = 'reward_prediction';
-
-basedirs = {'Y:\Ephys\data_132F\2024-03\', 'Y:\Ephys\data_132F\2024-04\'}; 
-
-data_all_trials = {};
-
-for bd = basedirs
-    data_this_dir = {};
-    basedir = bd{:};
-    sessions = dir(basedir);
-    sessions = sessions(3:end); % remove '.', '..' 
-    for session = sessions'
-        if ~isempty(session) & session.isdir
-            data_this_session = [];
-            recs = dir([session.folder,filesep,session.name]);
-            recs = recs(3:end); % remove '.', '..'
-            for rec = recs'
-                if ~isempty(rec) & rec.isdir
-                    filepath = [rec.folder,filesep,rec.name,filesep,'analyzed_data',filesep,'behavior_data',filesep,'eye'];
-                    if isfolder(filepath)
-                        files = dir(filepath);
-                        for f = files'
-                            if ~isempty(f) & ~f.isdir
-                                if strcmpi(f_name_end, f.name((end-length(f_name_end)+1):end) ) & ...
-                                   strcmpi(f_name_str, f.name(1:length(f_name_str)) )
-                                    load([f.folder,filesep,f.name], 'trials_data');
-                                    tr_d = struct('task_cond', trials_data.task_cond, ...
-                                                  'tgt_cond', trials_data.tgt_cond, ...
-                                                  'rew_cond', trials_data.rew_cond, ...
-                                                  'jump_cond', trials_data.jump_cond, ...
-                                                  'choice', trials_data.choice, ...
-                                                  'cue_x', trials_data.cue_x, ...
-                                                  'cue_y', trials_data.cue_y, ...
-                                                  'tgt_px', trials_data.tgt_px, ...
-                                                  'tgt_py', trials_data.tgt_py, ...
-                                                  'eye_px_filt', trials_data.eye_px_filt, ...
-                                                  'eye_py_filt', trials_data.eye_py_filt, ...
-                                                  'eye_vx_filt', trials_data.eye_vx_filt, ...
-                                                  'eye_vy_filt', trials_data.eye_vy_filt ...
-                                                  );
-                                    data_this_session = [data_this_session, tr_d];
-                                    clear trials_data sac_data meta_data tr_d
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            data_this_dir = [data_this_dir, data_this_session];
-            clear data_this_session
+if nargin < 4
+    beta0 = [];
+    if nargin < 3
+        alpha0 = [];
+        if nargin < 2
+            depict = false;
         end
     end
-    data_all_trials = [data_all_trials, data_this_dir];
-    clear data_this_dir
 end
 
-%% stateless Boltzmann decision-making: determine rational belief function
+if isempty(alpha0)
+    if ~isempty(beta0)
+        alpha0 = beta0;
+    else
+        alpha0 = 1; beta0 = 1;
+    end
+else
+    if isempty(beta0)
+        beta0 = alpha0;
+    end
+end
 
-ind1 = randi(length(data_all_trials));
-dta = data_all_trials{ind1};
-ind2 = randi(length(dta)); 
-dta = dta(ind2);
+if numel(beta0) == 1
+    beta0 = [beta0; beta0];
+end
+if numel(alpha0) == 1
+    alpha0 = [alpha0; alpha0];
+end
+
+%% determine rational belief function
 
 Rcue = dta.tgt_cond; 
 Rtru = dta.rew_cond; 
@@ -73,7 +47,7 @@ forcedtrl = dta.task_cond == 1;
 
 % belief from ratio only 
 Brat = nan(2,length(Rtru)+1); % belief that (Rtru | [Rcue=0; Rcue=1]) = 1 
-Brat0 = [.5; .5]; % prior 
+Brat0 = alpha0./(alpha0 + beta0); % prior 
 Brat(:,1) = Brat0; 
 
 % bayesian belief using beta/binomial distribution 
@@ -82,9 +56,9 @@ Brat(:,1) = Brat0;
 % r_ML = alpha/(alpha+beta)
 b = @(theta,alpha,beta) theta.^alpha .* (1-theta).^beta; % unscaled beta distribution
 Bbay = nan(2,length(Rtru)+1,3);  
-alpha0 = 1; beta0 = 1; 
-denom0 = integral(@(r) b(r,alpha0,beta0), 0, 1);
-Bbay0 = cat(3, [alpha0;alpha0], [beta0;beta0], [denom0;denom0]); % prior 
+denom0 = [integral(@(r) b(r,alpha0(1),beta0(1)), 0, 1); ...
+          integral(@(r) b(r,alpha0(2),beta0(2)), 0, 1)];
+Bbay0 = cat(3, alpha0, beta0, denom0); % prior 
 Bbay(:,1,:) = Bbay0;
 
 for t = 1:length(Rtru)
@@ -121,8 +95,13 @@ for t = 1:length(Rtru)
     Bbay(cueChosen,t+1,3) = denom; 
 end
 
+alpha_end = Bbay(:,end,1); 
+beta_end  = Bbay(:,end,2);
+denom_end = Bbay(:,end,3);
+
 %% visualize rational belief function 
-%{
+if depict
+
 numTrl = size(Brat,2); numToView = 8;
 trlToView = sort(randperm(numTrl,numToView)); 
 %trlToView = 1:numToView;
@@ -166,7 +145,8 @@ subplot(2,1,1); title('Cue 0 rational belief');
 ylabel('reward'); xlabel('trial');
 subplot(2,1,2); title('Cue 1 rational belief'); 
 ylabel('reward'); xlabel('trial');
-%}
+
+end
 
 %% find max likelihood Boltzmann rationality 
 
@@ -194,6 +174,9 @@ LL_RHS = @(boltz, R1, R2) sum( log(exp(boltz.*R1) + exp(boltz.*R2)) , 2);
 prb = @(a, boltz, R) exp(boltz.*R(a,:)) ./ (exp(boltz.*R(1,:)) + exp(boltz.*R(2,:))); 
 
 bmax = 50;
+
+if depict
+
 bvals = linspace(-bmax,bmax,1000)';
 figure('Units', 'normalized', 'Position', [.4,.1,.5,.8]); 
 
@@ -218,21 +201,37 @@ plot(bvals, dLL);
 title('derivative log likelihood'); xlabel('Boltzmann rationality');
 legend('ratio', 'bayes max like', 'bayes expected', 'Location','westoutside')
 
-boltz_rat = fzero(@(boltz) dLL_RHS(boltz, Rrat(1,:), Rrat(2,:)) - LHSrat, [-bmax,bmax])
-L_rat = exp( boltz_rat*LHSrat - LL_RHS(boltz_rat, Rrat(1,:), Rrat(2,:)) )
-boltz_bay1 = fzero(@(boltz) dLL_RHS(boltz, Rbay1(1,:), Rbay1(2,:)) - LHSbay1, [-bmax,bmax])
-L_bay1 = exp( boltz_bay1*LHSbay1 - LL_RHS(boltz_bay1, Rbay1(1,:), Rbay1(2,:)) )
-boltz_bay2 = fzero(@(boltz) dLL_RHS(boltz, Rbay2(1,:), Rbay2(2,:)) - LHSbay2, [-bmax,bmax])
-L_bay2 = exp( boltz_bay2*LHSbay2 - LL_RHS(boltz_bay2, Rbay2(1,:), Rbay2(2,:)) )
-
-figure('Units', 'normalized', 'Position', [.4,.1,.5,.3]); 
-PRB = nan(3,size(Rbay2,2)); 
-for t = 1:size(PRB,2)
-    PRB(1,t) = prb(aind(t), boltz_rat, Rrat(:,t)); 
-    PRB(2,t) = prb(aind(t), boltz_bay1, Rbay1(:,t)); 
-    PRB(3,t) = prb(aind(t), boltz_bay2, Rbay2(:,t)); 
 end
-plot(PRB'); grid on; 
-title('Each Trial Likelihood'); 
-ylabel('probability'); xlabel('trial'); 
-legend('ratio', 'bayes max like', 'bayes expected', 'Location','westoutside')
+
+boltz_rat = fzero_wrapper(@(boltz) dLL_RHS(boltz, Rrat(1,:), Rrat(2,:)) - LHSrat, [-bmax,bmax]);
+L_rat = exp( boltz_rat*LHSrat - LL_RHS(boltz_rat, Rrat(1,:), Rrat(2,:)) );
+boltz_bay1 = fzero_wrapper(@(boltz) dLL_RHS(boltz, Rbay1(1,:), Rbay1(2,:)) - LHSbay1, [-bmax,bmax]);
+L_bay1 = exp( boltz_bay1*LHSbay1 - LL_RHS(boltz_bay1, Rbay1(1,:), Rbay1(2,:)) );
+boltz_bay2 = fzero_wrapper(@(boltz) dLL_RHS(boltz, Rbay2(1,:), Rbay2(2,:)) - LHSbay2, [-bmax,bmax]);
+L_bay2 = exp( boltz_bay2*LHSbay2 - LL_RHS(boltz_bay2, Rbay2(1,:), Rbay2(2,:)) );
+
+if depict
+    figure('Units', 'normalized', 'Position', [.4,.1,.5,.3]); 
+    PRB = nan(3,size(Rbay2,2)); 
+    for t = 1:size(PRB,2)
+        PRB(1,t) = prb(aind(t), boltz_rat, Rrat(:,t)); 
+        PRB(2,t) = prb(aind(t), boltz_bay1, Rbay1(:,t)); 
+        PRB(3,t) = prb(aind(t), boltz_bay2, Rbay2(:,t)); 
+    end
+    plot(PRB'); grid on; 
+    title('Each Trial Likelihood'); 
+    ylabel('probability'); xlabel('trial'); 
+    legend('ratio', 'bayes max like', 'bayes expected', 'Location','westoutside')
+end
+
+%% helpers
+    function x = fzero_wrapper(fun, x0)
+        try 
+            x = fzero(fun, x0);
+        catch ME
+            warning(ME.message)
+            x = nan; 
+        end
+    end
+
+end
