@@ -1,5 +1,7 @@
-function [boltz_rat, boltz_bay1, boltz_bay2, L_rat, L_bay1, L_bay2, ...
-          alpha_end, beta_end, denom_end] = ...
+function [boltz_rat, boltz_bay1, boltz_bay2, ...
+          L_rat, L_bay1, L_bay2, ...
+          mean_acc_rat, mean_acc_bay1, mean_acc_bay2, ...
+          alpha_end, beta_end, denom_end, h_end, n_end] = ...
     Boltzmann(dta, depict, alpha0, beta0)
 % stateless Boltzmann decision-making 
 % Determine Boltzmann rationality during a single rec data (dta). 
@@ -98,6 +100,10 @@ end
 alpha_end = Bbay(:,end,1); 
 beta_end  = Bbay(:,end,2);
 denom_end = Bbay(:,end,3);
+
+cueL = Rcue==0; cueH = Rcue==1; 
+n_end = [sum(cueL), sum(cueH)];
+h_end = [sum(Rtru(cueL) == 1), sum(Rtru(cueH) == 1)];
 
 %% visualize rational belief function 
 if depict
@@ -210,14 +216,19 @@ L_bay1 = exp( boltz_bay1*LHSbay1 - LL_RHS(boltz_bay1, Rbay1(1,:), Rbay1(2,:)) );
 boltz_bay2 = fzero_wrapper(@(boltz) dLL_RHS(boltz, Rbay2(1,:), Rbay2(2,:)) - LHSbay2, [-bmax,bmax]);
 L_bay2 = exp( boltz_bay2*LHSbay2 - LL_RHS(boltz_bay2, Rbay2(1,:), Rbay2(2,:)) );
 
+PRB = nan(3,size(Rbay2,2));
+for t = 1:size(PRB,2)
+    PRB(1,t) = prb(aind(t), boltz_rat, Rrat(:,t));
+    PRB(2,t) = prb(aind(t), boltz_bay1, Rbay1(:,t));
+    PRB(3,t) = prb(aind(t), boltz_bay2, Rbay2(:,t));
+end
+meanAcc = mean(PRB,2);
+mean_acc_rat = meanAcc(1); 
+mean_acc_bay1 = meanAcc(2);
+mean_acc_bay2 = meanAcc(3);
+
 if depict
     figure('Units', 'normalized', 'Position', [.4,.1,.5,.3]); 
-    PRB = nan(3,size(Rbay2,2)); 
-    for t = 1:size(PRB,2)
-        PRB(1,t) = prb(aind(t), boltz_rat, Rrat(:,t)); 
-        PRB(2,t) = prb(aind(t), boltz_bay1, Rbay1(:,t)); 
-        PRB(3,t) = prb(aind(t), boltz_bay2, Rbay2(:,t)); 
-    end
     plot(PRB'); grid on; 
     title('Each Trial Likelihood'); 
     ylabel('probability'); xlabel('trial'); 
