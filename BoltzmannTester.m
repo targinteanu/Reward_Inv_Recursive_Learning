@@ -7,7 +7,7 @@ dtas = data_all_trials{ind1};
 ind2 = randi(length(dtas)); 
 dta = dtas(ind2);
 
-Boltzmann(dta, true);
+getBoltzmann(dta, true);
 
 %% test all 
 
@@ -40,7 +40,7 @@ for ind1 = 1:length(data_all_trials)
           L_rat, L_bay1, L_bay2, ...
           mean_acc_rat, mean_acc_bay1, mean_acc_bay2, ...
           alpha_end, beta_end, denom_end, h_end, n_end] = ...
-        Boltzmann(dta, false, alpha0, beta0);
+        getBoltzmann(dta, false, alpha0, beta0);
 
         boltz1(Ni) = boltz_rat;
         boltz2(Ni) = boltz_bay1;
