@@ -42,3 +42,10 @@ else
     ttl = [ttl,' no jump'];
 end
 title(ttl);
+
+figure('Units', 'normalized', 'Position', [.4,.4,.5,.5]); 
+plot(dta.tgt_px{trl}, '-o'); hold on; plot(dta.tgt_py{trl}, '-o'); 
+plot(dta.eye_px_filt{trl}); plot(dta.eye_py_filt{trl});
+grid on; 
+xlabel('time (sample)'); ylabel('pos');
+title(ttl);
