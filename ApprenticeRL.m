@@ -3,9 +3,13 @@ ind1 = randi(length(data_all_trials));
 dtas = data_all_trials{ind1};
 ind2 = randi(length(dtas)); 
 dta = dtas(ind2);
-%%
-%trl = randi(length(dta.task_cond));
-trl = trl+1;
+trl = randi(length(dta.task_cond));
+%trl = trl+1;
+
+movethresh = .25;
+newState = (abs(diff(dta.tgt_px{trl})) >= movethresh) | (abs(diff(dta.tgt_py{trl})) >= movethresh);
+newObs = (abs(diff(dta.eye_px_filt{trl})) >= movethresh) | (abs(diff(dta.eye_py_filt{trl})) >= movethresh);
+newState = [true; newState]; newObs = [true; newObs];
 
 taskcondtype = {'choice', 'forced'}; 
 figure('Units', 'normalized', 'Position', [.1,.1,.5,.5]); 
@@ -24,11 +28,13 @@ plot(dta.cue_x_low_rew(trl),  dta.cue_y_low_rew(trl),  'vk', 'MarkerSize',10,'Li
 plot(dta.cue_x(trl),  dta.cue_y(trl),  'ok', 'MarkerSize',10,'LineWidth',2);
 plot(dta.start_x(trl), dta.start_y(trl), 'xk', 'MarkerSize',8,'LineWidth',2);
 plot(dta.end_x(trl), dta.end_y(trl), '+k', 'MarkerSize',8,'LineWidth',2);
+plot(dta.eye_px_filt{trl}(newState), dta.eye_py_filt{trl}(newState), 'or', 'MarkerSize',10);
 grid on; 
 legend(...
     'tgt p', 'tgt start', 'tgt end', ...
     'eye p filt', 'eye start', 'eye end', ...
     'cue hi', 'cue lo', 'cue', 'start', 'end', ...
+    'cue moved', ...
     'Location', 'eastoutside');
 ttl = [taskcondtype{dta.task_cond(trl)+1},' trial; ']; 
 if dta.task_cond(trl)
@@ -43,9 +49,10 @@ else
 end
 title(ttl);
 
-figure('Units', 'normalized', 'Position', [.4,.4,.5,.5]); 
-plot(dta.tgt_px{trl}, '-o'); hold on; plot(dta.tgt_py{trl}, '-o'); 
-plot(dta.eye_px_filt{trl}); plot(dta.eye_py_filt{trl});
+figure('Units', 'normalized', 'Position', [.5,.5,.4,.4]); 
+plot(dta.tgt_px{trl}, '-om'); hold on; plot(dta.tgt_py{trl}, '-og'); 
+plot(dta.eye_px_filt{trl}, 'm'); plot(dta.eye_py_filt{trl}, 'g');
 grid on; 
+legend('tgt x', 'tgt y', 'eye x', 'eye y', 'Location','eastoutside');
 xlabel('time (sample)'); ylabel('pos');
 title(ttl);
