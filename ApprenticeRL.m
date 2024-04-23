@@ -9,7 +9,7 @@ trl = randi(length(dta.task_cond));
 movethresh = .25;
 newState = (abs(diff(dta.tgt_px{trl})) >= movethresh) | (abs(diff(dta.tgt_py{trl})) >= movethresh);
 newObs = (abs(diff(dta.eye_px_filt{trl})) >= movethresh) | (abs(diff(dta.eye_py_filt{trl})) >= movethresh);
-newState = [true; newState]; newObs = [true; newObs];
+newState = [false; newState]; newObs = [false; newObs]; % ignore first position
 
 taskcondtype = {'choice', 'forced'}; 
 figure('Units', 'normalized', 'Position', [.1,.1,.5,.5]); 
