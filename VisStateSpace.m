@@ -6,4 +6,4 @@ dta = dtas(ind2);
 trl = randi(length(dta.task_cond));
 %trl = trl+1;
 
-getStateSpace(dta, trl, true);
+SS = getStateSpace(dta, trl, true);
