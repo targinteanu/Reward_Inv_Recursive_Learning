@@ -1,8 +1,10 @@
+%{
 function [S,A] = getStateSpace(dta, trl, depict)
 
 if nargin < 2
     depict = false;
 end
+%}
 
 t = dta.time{trl};
 eye_px_filt_trl = dta.eye_px_filt{trl};
@@ -24,48 +26,81 @@ tgt_px_hi = nan(size(tgt_px_trl)); tgt_py_hi = nan(size(tgt_py_trl));
 
 % only fixation target visible until fixation 
 tgtFix = [dta.start_x(trl), dta.start_y(trl)];
-tInd1 = 0; dist2tgt = inf;
 reward_radius = dta.reward_area(trl);
 reward_radius = sqrt(reward_radius/pi);
 [tgt_px_fx, tgt_py_fx, eye_p1, tInd1] = ...
     unicycle(tgtFix, inf, 0, eye_px_filt_trl, eye_py_filt_trl, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
 
-tgtHi = [dta.cue_x_high_rew, dta.cue_y_high_rew];
-tgtLo = [dta.cue_x_low_rew, dta.cue_y_low_rew]; 
+tgtHi = [dta.cue_x_high_rew(trl), dta.cue_y_high_rew(trl)];
+tgtLo = [dta.cue_x_low_rew(trl), dta.cue_y_low_rew(trl)]; 
 
 if dta.task_cond(trl)
     % forced 
-    if dta.tgt_cond(trl)
 
+    if dta.tgt_cond(trl)
         % forced hi 
         tgt2 = tgtHi; 
         if dta.jump_cond(trl)
-            tgt3 = tgt2 + [jump_dx, jump_dy]; 
+            tgt3 = tgt2 + [jump_dx(trl), jump_dy(trl)]; 
         else
             tgt3 = tgt2;
         end
-        [tgt_px_hi, tgt_py_hi] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
-            eye_px_filt_trl, eye_py_filt_trl, tgt_px_hi, tgt_py_hi, reward_radius, length(t));
+        [tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
 
     else
         % forced lo 
-        tgt_px_lo = tgt_px_trl; 
-        tgt_py_lo = tgt_py_trl;
+        tgt2 = tgtLo; 
+        if dta.jump_cond(trl)
+            tgt3 = tgt2 + [jump_dx(trl), jump_dy(trl)]; 
+        else
+            tgt3 = tgt2;
+        end
+        [tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
     end
+
 else
     % choice 
+
     if dta.choice(trl)
         % chose hi 
-        %tgt_px_hi = 0;
+        tgt2 = tgtHi; 
+        if dta.jump_cond(trl)
+            tgt3 = tgt2 + [jump_dx(trl), jump_dy(trl)]; 
+        else
+            tgt3 = tgt2;
+        end
+        [tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
+        [tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgtLo,tgtLo, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
+    
     else
         % chose lo
+        tgt2 = tgtLo; 
+        if dta.jump_cond(trl)
+            tgt3 = tgt2 + [jump_dx(trl), jump_dy(trl)]; 
+        else
+            tgt3 = tgt2;
+        end
+        [tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_lo, tgt_py_lo, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
+        [tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx] = tricycle(tgtFix,tgtHi,tgtHi, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_hi, tgt_py_hi, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
     end
 end
+
+TGT = [tgt_px_fx, tgt_py_fx, ...
+       tgt_px_hi, tgt_py_hi, ...
+       tgt_px_lo, tgt_py_lo]; 
+TGT(isnan(TGT)) = inf;
 
 %%
 
 movethresh = .25;
-newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
+%newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
+newState = abs(diff(TGT)) >= movethresh; newState = ~~sum(newState, 2);
 newObs = (abs(diff(eye_px_filt_trl)) >= movethresh) | (abs(diff(eye_py_filt_trl)) >= movethresh);
 newState = [false; newState]; newObs = [false; newObs]; % ignore first position
 newObs(newState) = true; % new state is always observed, even if no action
@@ -136,6 +171,7 @@ end
 
 function [tgtX, tgtY, eye_p1, tInd1] = unicycle(tgt1, dist2tgt, tInd0, eyeX, eyeY, tgtX, tgtY, reward_radius, T)
     tInd1 = tInd0; tInd0 = tInd0+1;
+    eye_p1 = [nan, nan];
     while (tInd1 < T) & (dist2tgt > reward_radius)
         tInd1 = tInd1+1;
         eye_p1 = [eyeX(tInd1), eyeY(tInd1)];
@@ -145,7 +181,9 @@ function [tgtX, tgtY, eye_p1, tInd1] = unicycle(tgt1, dist2tgt, tInd0, eyeX, eye
 end
 
 
-function [tgtX, tgtY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, eyeX, eyeY, tgtX, tgtY, reward_radius, T)
+function [tgtX, tgtY, fixX, fixY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, ...
+    eyeX, eyeY, tgtX, tgtY, fixX, fixY, reward_radius, T)
+
     tInd2 = tInd1; tInd3 = tInd2;
 
     while (tInd2 < T) & (tInd1 < T) & (tInd3 < T)
@@ -160,12 +198,14 @@ function [tgtX, tgtY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, eyeX, eyeY, tg
         % sac started 
         tgtX((tInd1+1):tInd2) = tgt2(1); tgtY((tInd1+1):tInd2) = tgt2(2); 
 
-        [tgtX, tgtY, eye_p2, tInd3] = unicycle(tgt3, norm(eye_p2 - tgt3), tInd2, eyeX, eyeY, tgtX, tgtY, reward_radius, T); 
+        [tgtX, tgtY, eye_p2, tInd3] = ...
+            unicycle(tgt3, norm(eye_p2 - tgt3), tInd2, eyeX, eyeY, tgtX, tgtY, reward_radius, T); 
         % reached target 
 
-        [tgtX, tgtY, eye_p1, tInd1] = unicycle(tgt1, norm(eye_p2 - tgt1), tInd3, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
+        [fixX, fixY, eye_p1, tInd1] = ... 
+            unicycle(tgt1, norm(eye_p2 - tgt1), tInd3, eyeX, eyeY, fixX, fixY, reward_radius, T);
         % back to fixation 
     end
 end
 
-end
+%end
