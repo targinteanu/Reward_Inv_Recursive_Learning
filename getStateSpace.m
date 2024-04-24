@@ -1,4 +1,4 @@
-function SS = getStateSpace(dta, trl, depict)
+function [S,A] = getStateSpace(dta, trl, depict)
 
 if nargin < 2
     depict = false;
@@ -14,11 +14,41 @@ movethresh = .25;
 newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
 newObs = (abs(diff(eye_px_filt_trl)) >= movethresh) | (abs(diff(eye_py_filt_trl)) >= movethresh);
 newState = [false; newState]; newObs = [false; newObs]; % ignore first position
-sel = newState | newObs;
+newObs(newState) = true; % new state is always observed, even if no action
 
-SS = timetable(seconds(t(sel)), ...
-    eye_px_filt_trl(sel), eye_py_filt_trl(sel), ...
-    tgt_px_trl(sel), tgt_py_trl(sel));
+tgt_px_lo = nan(size(tgt_px_trl)); tgt_py_lo = nan(size(tgt_py_trl)); 
+tgt_px_hi = nan(size(tgt_px_trl)); tgt_py_hi = nan(size(tgt_py_trl));
+if dta.task_cond(trl)
+    % forced 
+    if dta.tgt_cond(trl)
+        % forced hi 
+        tgt_px_hi = tgt_px_trl; 
+        tgt_py_hi = tgt_py_trl;
+    else
+        % forced lo 
+        tgt_px_lo = tgt_px_trl; 
+        tgt_py_lo = tgt_py_trl;
+    end
+else
+    % choice 
+    if dta.choice(trl)
+        % chose hi 
+        %tgt_px_hi = 0;
+    else
+        % chose lo
+    end
+end
+
+S = timetable(seconds(t), ...
+    eye_px_filt_trl, eye_py_filt_trl, ...
+    tgt_px_lo, tgt_py_lo, ...
+    tgt_px_hi, tgt_py_hi);
+S = S(newObs,:);
+% state is current eye and target positions 
+
+A = [S.eye_px_filt_trl, S.eye_py_filt_trl]; % action uses eye position
+A = A(2:end,:) - A(1:(end-1),:); % action is change in position 
+S = S(1:(end-1),:); % last observation will be counted in the next trial
 
 if depict
     taskcondtype = {'choice', 'forced'};
