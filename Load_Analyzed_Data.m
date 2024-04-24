@@ -59,6 +59,23 @@ for bd = basedirs
                                                     'eye_vy_filt'};
                                     fld = '';
                                     try 
+                                        % fix cue high rew 
+                                        for trl = 1:length(trials_data.task_cond)
+                                            if trials_data.task_cond(trl) 
+                                                % forced 
+                                                if trials_data.tgt_cond(trl)
+                                                    % forced high
+                                                    tempX = trials_data.cue_x_high_rew(trl);
+                                                    tempY = trials_data.cue_y_high_rew(trl);
+                                                    trials_data.cue_x_high_rew(trl) = trials_data.cue_x_low_rew(trl);
+                                                    trials_data.cue_y_high_rew(trl) = trials_data.cue_y_low_rew(trl);
+                                                    trials_data.cue_x_low_rew(trl) = tempX; 
+                                                    trials_data.cue_y_low_rew(trl) = tempY; 
+                                                end
+                                            end
+                                        end
+                                        clear trl tempX tempY
+
                                         tr_d = struct();
                                         for fld = fieldsToCopy
                                             fld = fld{:};
