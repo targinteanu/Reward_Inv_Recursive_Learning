@@ -9,15 +9,16 @@ force_hi = [];
 force_lo = [];
 cue_hi = [];
 cue_lo = [];
-point_is_same = @(x1,y1,x2,y2) norm([x1-x2,y1-y2]) < 1;
+dist = @(x1,y1,x2,y2) norm([x1-x2,y1-y2]);
 for ind1 = 1:(length(data_all_trials))
     dtas = data_all_trials{ind1};
     for ind2 = 1:(length(dtas))
         dta = dtas(ind2);
-        cue_is_hi = false(length(dta.task_cond),1); cue_is_lo = cue_is_hi;
+        goes_to_hi = false(length(dta.task_cond),1); 
         for trl = 1:(length(dta.task_cond))
-            cue_is_hi(trl) = point_is_same(dta.cue_x(trl), dta.cue_y(trl), dta.cue_x_high_rew(trl), dta.cue_y_high_rew(trl));
-            cue_is_lo(trl) = point_is_same(dta.cue_x(trl), dta.cue_y(trl), dta.cue_x_low_rew(trl), dta.cue_y_low_rew(trl));
+            dist_from_hi = dist(dta.eye_px_filt{trl}(end), dta.eye_py_filt{trl}(end), dta.cue_x_high_rew(trl), dta.cue_y_high_rew(trl));
+            dist_from_lo = dist(dta.eye_px_filt{trl}(end), dta.eye_py_filt{trl}(end), dta.cue_x_low_rew(trl), dta.cue_y_low_rew(trl));
+            goes_to_hi(trl) = dist_from_hi < dist_from_lo;
         end
             forced_hi = (dta.task_cond == 1) & (dta.tgt_cond == 1);
             forced_lo = (dta.task_cond == 1) & (dta.tgt_cond == 0);
@@ -28,13 +29,13 @@ for ind1 = 1:(length(data_all_trials))
             chose_lo = [chose_lo; mean(chosen_lo)];
             force_hi = [force_hi; mean(forced_hi)];
             force_lo = [force_lo; mean(forced_lo)]; 
-            cue_hi = [cue_hi; mean(cue_is_hi)];
-            cue_lo = [cue_lo; mean(cue_is_lo)];
+            cue_hi = [cue_hi; mean(goes_to_hi)];
+            goes_to_lo = ~goes_to_hi;
 
-            chose_hi_cue_hi = [chose_hi_cue_hi; mean( cue_is_hi(chosen_hi) )];
-            chose_lo_cue_lo = [chose_lo_cue_lo; mean( cue_is_lo(chosen_lo) )];
-            force_hi_cue_hi = [force_hi_cue_hi; mean( cue_is_hi(forced_hi) )];
-            force_lo_cue_lo = [force_lo_cue_lo; mean( cue_is_lo(forced_lo) )];
+            chose_hi_cue_hi = [chose_hi_cue_hi; mean( goes_to_hi(chosen_hi) )];
+            chose_lo_cue_lo = [chose_lo_cue_lo; mean( goes_to_lo(chosen_lo) )];
+            force_hi_cue_hi = [force_hi_cue_hi; mean( goes_to_hi(forced_hi) )];
+            force_lo_cue_lo = [force_lo_cue_lo; mean( goes_to_lo(forced_lo) )];
     end
 end
 %%
