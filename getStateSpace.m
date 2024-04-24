@@ -27,16 +27,11 @@ tgtFix = [dta.start_x(trl), dta.start_y(trl)];
 tInd1 = 0; dist2tgt = inf;
 reward_radius = dta.reward_area(trl);
 reward_radius = sqrt(reward_radius/pi);
-while (tInd1 < length(t)) & (dist2tgt > reward_radius)
-    tInd1 = tInd1+1;
-    eye_p1 = [eye_px_filt_trl(tInd1), eye_py_filt_trl(tInd1)];
-    dist2tgt = norm(eye_p1 - tgtFix);
-end
-tgt_px_fx(1:tInd1) = tgtFix(1); tgt_py_fx(1:tInd1) = tgtFix(2); 
+[tgt_px_fx, tgt_py_fx, eye_p1, tInd1] = ...
+    unicycle(tgtFix, inf, 0, eye_px_filt_trl, eye_py_filt_trl, tgt_px_fx, tgt_py_fx, reward_radius, length(t));
 
 tgtHi = [dta.cue_x_high_rew, dta.cue_y_high_rew];
 tgtLo = [dta.cue_x_low_rew, dta.cue_y_low_rew]; 
-tInd2 = tInd1; tInd3 = tInd2;
 
 if dta.task_cond(trl)
     % forced 
@@ -49,31 +44,8 @@ if dta.task_cond(trl)
         else
             tgt3 = tgt2;
         end
-        while (tInd2 < length(t)) & (tInd1 < length(t)) & (tInd3 < length(t))
-            tInd2 = tInd2+1; 
-            eye_p2 = [eye_px_filt_trl(tInd2), eye_py_filt_trl(tInd2)];
-            while (tInd2 < length(t)) & (norm(eye_p2 - tgt2) >= norm(eye_p1 - tgt2)) 
-                % sac not yet started 
-                tInd2 = tInd2+1; 
-                eye_p2 = [eye_px_filt_trl(tInd2), eye_py_filt_trl(tInd2)];
-            end
-            % sac started 
-            tgt_px_hi((tInd1+1):tInd2) = tgt2(1); tgt_py_hi((tInd1+1):tInd2) = tgt2(2);
-            tInd3 = tInd2; 
-            while (tInd3 < length(t)) & (norm(eye_p2 - tgt3) > reward_radius)
-                tInd3 = tInd3+1;
-                eye_p2 = [eye_px_filt_trl(tInd3), eye_py_filt_trl(tInd3)];
-            end
-            % reached target 
-            tgt_px_hi((tInd2+1):tInd3) = tgt3(1); tgt_py_hi((tInd2+1):tInd3) = tgt3(2);
-            tInd1 = tInd3; 
-            while (tInd1 < length(t)) & (norm(eye_p2 - tgtFix) > reward_radius)
-                tInd1 = tInd1+1;
-                eye_p2 = [eye_px_filt_trl(tInd1), eye_py_filt_trl(tInd1)];
-            end
-            % back to fixation 
-            tgt_px_hi((tInd3+1):tInd1) = tgtFix(1); tgt_py_hi((tInd3+1):tInd1) = tgtFix(2);
-        end
+        [tgt_px_hi, tgt_py_hi] = tricycle(tgtFix,tgt2,tgt3, tInd1,eye_p1, ...
+            eye_px_filt_trl, eye_py_filt_trl, tgt_px_hi, tgt_py_hi, reward_radius, length(t));
 
     else
         % forced lo 
@@ -100,6 +72,7 @@ newObs(newState) = true; % new state is always observed, even if no action
 
 S = timetable(seconds(t), ...
     eye_px_filt_trl, eye_py_filt_trl, ...
+    tgt_px_fx, tgt_py_fx, ...
     tgt_px_lo, tgt_py_lo, ...
     tgt_px_hi, tgt_py_hi);
 S = S(newObs,:);
@@ -157,6 +130,35 @@ if depict
     legend('tgt x', 'tgt y', 'eye x', 'eye y', 'Location','eastoutside');
     xlabel('time (s)'); ylabel('pos');
     title(ttl);
+end
+
+%% functions 
+
+function [tgtX, tgtY, eye_p1, tInd1] = unicycle(tgt1, dist2tgt, tInd0, eyeX, eyeY, tgtX, tgtY, reward_radius, T)
+    tInd1 = tInd0; tInd0 = tInd0+1;
+    while (tInd1 < T) & (dist2tgt > reward_radius)
+        tInd1 = tInd1+1;
+        eye_p1 = [eyeX(tInd1), eyeY(tInd1)];
+        dist2tgt = norm(eye_p1 - tgt1);
+    end
+    tgtX(tInd0:tInd1) = tgt1(1); tgtY(tInd0:tInd1) = tgt1(2);
+end
+
+
+function [tgtX, tgtY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, eyeX, eyeY, tgtX, tgtY, reward_radius, T)
+    tInd2 = tInd1; tInd3 = tInd2;
+
+    while (tInd2 < T) & (tInd1 < T) & (tInd3 < T)
+
+        [tgtX, tgtY, eye_p2, tInd2] = unicycle(tgt2, inf, tInd1, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
+        % sac started 
+
+        [tgtX, tgtY, eye_p2, tInd3] = unicycle(tgt3, norm(eye_p2 - tgt3), tInd2, eyeX, eyeY, tgtX, tgtY, reward_radius, T); 
+        % reached target 
+
+        [tgtX, tgtY, eye_p2, tInd1] = unicycle(tgt1, norm(eye_p2 - tgt1), tInd3, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
+        % back to fixation 
+    end
 end
 
 end
