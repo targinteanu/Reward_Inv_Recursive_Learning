@@ -1,3 +1,5 @@
+gamma = .5; % discount factor 
+
 % loop through all 
 ind1 = randi(length(data_all_trials)); 
 %for ind1 = 1:(length(data_all_trials))
@@ -11,6 +13,10 @@ ind1 = randi(length(data_all_trials));
             [Strl, Atrl] = getStateSpace(dta,trl,false);
             Srec = [Srec; Strl]; 
             Arec = [Arec; Atrl];
+
+            Phi = Strl{1:height(Strl), 1:width(Strl)};
+            Gamma = gamma.^(0:(width(Strl)-1));
+            muEi = Phi*Gamma';
         end
 
         Srec.Time = Srec.Time - Srec.Time(1);
