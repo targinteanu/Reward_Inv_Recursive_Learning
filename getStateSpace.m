@@ -94,9 +94,7 @@ TGT = [tgt_px_fx, tgt_py_fx, ...
        tgt_px_lo, tgt_py_lo]; 
 TGT(isnan(TGT)) = inf;
 
-%% encode state into [0,1] feature space 
-
-phi = @(s) 1./(1 + exp(-s/20)); 
+%phi = @(s) 1./(1 + exp(-s/20)); 
 
 tgt_p_list = {'tgt_px_fx', 'tgt_py_fx', ...
               'tgt_px_hi', 'tgt_py_hi', ...
@@ -104,7 +102,7 @@ tgt_p_list = {'tgt_px_fx', 'tgt_py_fx', ...
 for tgt_p = tgt_p_list
     tgt_p = tgt_p{:};
     eval([tgt_p,'(isnan(',tgt_p,')) = inf;']);
-    eval([tgt_p,' = phi(',tgt_p,');']);
+    %eval([tgt_p,' = phi(',tgt_p,');']);
 end
 
 %%
