@@ -150,13 +150,20 @@ function [tgtX, tgtY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, eyeX, eyeY, tg
 
     while (tInd2 < T) & (tInd1 < T) & (tInd3 < T)
 
-        [tgtX, tgtY, eye_p2, tInd2] = unicycle(tgt2, inf, tInd1, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
+        tInd2 = tInd1+1; 
+        eye_p2 = [eyeX(tInd2), eyeY(tInd2)]; 
+        while (tInd2 < T) & (norm(eye_p2 - tgt2) >= norm(eye_p1 - tgt2))
+            % sac not yet started 
+            tInd2 = tInd2+1;
+            eye_p2 = [eyeX(tInd2), eyeY(tInd2)];
+        end
         % sac started 
+        tgtX((tInd1+1):tInd2) = tgt2(1); tgtY((tInd1+1):tInd2) = tgt2(2); 
 
         [tgtX, tgtY, eye_p2, tInd3] = unicycle(tgt3, norm(eye_p2 - tgt3), tInd2, eyeX, eyeY, tgtX, tgtY, reward_radius, T); 
         % reached target 
 
-        [tgtX, tgtY, eye_p2, tInd1] = unicycle(tgt1, norm(eye_p2 - tgt1), tInd3, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
+        [tgtX, tgtY, eye_p1, tInd1] = unicycle(tgt1, norm(eye_p2 - tgt1), tInd3, eyeX, eyeY, tgtX, tgtY, reward_radius, T);
         % back to fixation 
     end
 end
