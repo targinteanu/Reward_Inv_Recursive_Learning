@@ -1,10 +1,8 @@
-%{
 function [S,A] = getStateSpace(dta, trl, depict)
 
 if nargin < 2
     depict = false;
 end
-%}
 
 t = dta.time{trl};
 eye_px_filt_trl = dta.eye_px_filt{trl};
@@ -211,4 +209,4 @@ function [tgtX, tgtY, fixX, fixY] = tricycle(tgt1, tgt2, tgt3, tInd1, eye_p1, ..
     end
 end
 
-%end
+end
