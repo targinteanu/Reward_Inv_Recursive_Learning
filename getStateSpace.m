@@ -12,25 +12,69 @@ tgt_py_trl = dta.tgt_py{trl};
 jump_dx = dta.end_x - dta.cue_x; 
 jump_dy = dta.end_y - dta.cue_y;
 
+%% construct new version of tgt_p
 % in choice 1 trials with jump, tgt_p fails to follow the jump
 % in forced trials, tgt_p inserts jump where there is none 
 % forced 1 trials with jump OK
 % choice no jump OK
 
-movethresh = .25;
-newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
-newObs = (abs(diff(eye_px_filt_trl)) >= movethresh) | (abs(diff(eye_py_filt_trl)) >= movethresh);
-newState = [false; newState]; newObs = [false; newObs]; % ignore first position
-newObs(newState) = true; % new state is always observed, even if no action
-
+tgt_px_fx = nan(size(tgt_px_trl)); tgt_py_fx = nan(size(tgt_py_trl)); 
 tgt_px_lo = nan(size(tgt_px_trl)); tgt_py_lo = nan(size(tgt_py_trl)); 
 tgt_px_hi = nan(size(tgt_px_trl)); tgt_py_hi = nan(size(tgt_py_trl));
+
+% only fixation target visible until fixation 
+tgtFix = [dta.start_x(trl), dta.start_y(trl)];
+tInd1 = 0; dist2tgt = inf;
+reward_radius = dta.reward_area(trl);
+reward_radius = sqrt(reward_radius/pi);
+while (tInd1 < length(t)) & (dist2tgt > reward_radius)
+    tInd1 = tInd1+1;
+    eye_p1 = [eye_px_filt_trl(tInd1), eye_py_filt_trl(tInd1)];
+    dist2tgt = norm(eye_p1 - tgtFix);
+end
+tgt_px_fx(1:tInd1) = tgtFix(1); tgt_py_fx(1:tInd1) = tgtFix(2); 
+
+tgtHi = [dta.cue_x_high_rew, dta.cue_y_high_rew];
+tgtLo = [dta.cue_x_low_rew, dta.cue_y_low_rew]; 
+tInd2 = tInd1; tInd3 = tInd2;
+
 if dta.task_cond(trl)
     % forced 
     if dta.tgt_cond(trl)
+
         % forced hi 
-        tgt_px_hi = tgt_px_trl; 
-        tgt_py_hi = tgt_py_trl;
+        tgt2 = tgtHi; 
+        if dta.jump_cond(trl)
+            tgt3 = tgt2 + [jump_dx, jump_dy]; 
+        else
+            tgt3 = tgt2;
+        end
+        while (tInd2 < length(t)) & (tInd1 < length(t)) & (tInd3 < length(t))
+            tInd2 = tInd2+1; 
+            eye_p2 = [eye_px_filt_trl(tInd2), eye_py_filt_trl(tInd2)];
+            while (tInd2 < length(t)) & (norm(eye_p2 - tgt2) >= norm(eye_p1 - tgt2)) 
+                % sac not yet started 
+                tInd2 = tInd2+1; 
+                eye_p2 = [eye_px_filt_trl(tInd2), eye_py_filt_trl(tInd2)];
+            end
+            % sac started 
+            tgt_px_hi((tInd1+1):tInd2) = tgt2(1); tgt_py_hi((tInd1+1):tInd2) = tgt2(2);
+            tInd3 = tInd2; 
+            while (tInd3 < length(t)) & (norm(eye_p2 - tgt3) > reward_radius)
+                tInd3 = tInd3+1;
+                eye_p2 = [eye_px_filt_trl(tInd3), eye_py_filt_trl(tInd3)];
+            end
+            % reached target 
+            tgt_px_hi((tInd2+1):tInd3) = tgt3(1); tgt_py_hi((tInd2+1):tInd3) = tgt3(2);
+            tInd1 = tInd3; 
+            while (tInd1 < length(t)) & (norm(eye_p2 - tgtFix) > reward_radius)
+                tInd1 = tInd1+1;
+                eye_p2 = [eye_px_filt_trl(tInd1), eye_py_filt_trl(tInd1)];
+            end
+            % back to fixation 
+            tgt_px_hi((tInd3+1):tInd1) = tgtFix(1); tgt_py_hi((tInd3+1):tInd1) = tgtFix(2);
+        end
+
     else
         % forced lo 
         tgt_px_lo = tgt_px_trl; 
@@ -46,6 +90,14 @@ else
     end
 end
 
+%%
+
+movethresh = .25;
+newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
+newObs = (abs(diff(eye_px_filt_trl)) >= movethresh) | (abs(diff(eye_py_filt_trl)) >= movethresh);
+newState = [false; newState]; newObs = [false; newObs]; % ignore first position
+newObs(newState) = true; % new state is always observed, even if no action
+
 S = timetable(seconds(t), ...
     eye_px_filt_trl, eye_py_filt_trl, ...
     tgt_px_lo, tgt_py_lo, ...
@@ -56,6 +108,8 @@ S = S(newObs,:);
 A = [S.eye_px_filt_trl, S.eye_py_filt_trl]; % action uses eye position
 A = A(2:end,:) - A(1:(end-1),:); % action is change in position 
 S = S(1:(end-1),:); % last observation will be counted in the next trial
+
+%%
 
 if depict
     taskcondtype = {'choice', 'forced'};
