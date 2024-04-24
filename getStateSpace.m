@@ -9,6 +9,13 @@ eye_px_filt_trl = dta.eye_px_filt{trl};
 eye_py_filt_trl = dta.eye_py_filt{trl};
 tgt_px_trl = dta.tgt_px{trl};
 tgt_py_trl = dta.tgt_py{trl};
+jump_dx = dta.end_x - dta.cue_x; 
+jump_dy = dta.end_y - dta.cue_y;
+
+% in choice 1 trials with jump, tgt_p fails to follow the jump
+% in forced trials, tgt_p inserts jump where there is none 
+% forced 1 trials with jump OK
+% choice no jump OK
 
 movethresh = .25;
 newState = (abs(diff(tgt_px_trl)) >= movethresh) | (abs(diff(tgt_py_trl)) >= movethresh);
