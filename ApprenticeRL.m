@@ -41,14 +41,15 @@ ind1 = randi(length(data_all_trials));
     for ind2 = 1:(length(dtas))
         Sapp = Srec(randi(height(Srec)),:); Strl = Sapp; 
         Aapp = []; Atrl = Arec(1,:);
-        for trl = 1:height(Srec)
+        for trl = 1:min(height(Srec), 10000)
             Atrl.eye_px_filt_trl = rand; 
             Atrl.eye_py_filt_trl = rand;
             Atrl = phiGridInv(Atrl);
             Strl = updateGridState(Strl, Atrl); 
             Sapp = [Sapp; Strl]; Aapp = [Aapp; Atrl];
         end
-        Phi = phi(Sapp{1:height(Sapp), 1:width(Sapp)}');
+        % Phi = phi(Sapp{1:height(Sapp), 1:width(Sapp)}');
+        Phi = phiGrid(Sapp); Phi = Phi{:,:}';
         Gamma = gamma.^(0:(height(Sapp)-1));
         mu0(:,ind2) = Phi*Gamma';
     end
@@ -57,6 +58,7 @@ ind1 = randi(length(data_all_trials));
     %% iterate until policy convergence 
     ind3 = 1; Del = inf; theta = .1;
     MT = [muE, mu0]; YT = [1, 0]; 
+    Q = {}; 
 
     while Del > theta
 
@@ -66,6 +68,6 @@ ind1 = randi(length(data_all_trials));
         Del = wT*(muE - MT(:,2:end)); Del = min(Del); 
 
         % step 4: get pi, mu 
-        pol(ind3) = ReinforcementLearn(@(s) wT*phi(s)); 
+        Q = [Q, ReinforcementLearnGrid(@(s) wT*phiGrid(s))]; 
     end
 %end
