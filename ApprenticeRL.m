@@ -69,7 +69,11 @@ ind1 = randi(length(data_all_trials));
         Del = wT*(muE - MT(:,2:end)); Del = min(Del); 
 
         % step 4: get pi, mu 
-        Q = [Q, ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, gamma, 1000)]; 
-        
+        [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
+        Q = [Q, Qfun]; 
+        Phi = phiGrid(Srl); Phi = Phi{:,:}';
+        Gamma = gamma.^(0:(height(Srl)-1));
+        MT = [MT, Phi*Gamma'];
+
     end
 %end

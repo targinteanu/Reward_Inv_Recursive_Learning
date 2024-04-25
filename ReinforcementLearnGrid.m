@@ -1,4 +1,4 @@
-function [Qfun, Qtable] = ReinforcementLearnGrid(R, gamma, alpha, tf)
+function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(R, gamma, alpha, tf)
 % use Q learning to determine the optimal value function Q given the reward
 % function R(s)
 % Return Q as a table with possible states as rows and actions as columns 
@@ -45,6 +45,8 @@ for t = 1:tf
     Qs = getQ(Snxt, []); [maxQ,indMax] = max(Qs); 
     q2 = rew + gamma * maxQ;
     setQ(Snow,At, (1-alpha)*q1 + alpha*q2);
+    Sall(t,:) = Snow; Aall(t,:) = At;
+    Snow = Snxt;
 end
 
 Qfun = @(s,a) getQ(s,a);
