@@ -3,6 +3,7 @@ gamma = .5; % discount factor
 phi = @(s) 1./(1 + exp(-s/20)); % sigmoid mapping to [0,1]
 inv_phi = @(ph) 20*log(ph./(1-ph)); % inv sigmoid mapping to [-inf, inf]
 %}
+unwrapPhi = @(phiTbl) phiTbl{:,:}';
 
 % loop through all 
 ind1 = randi(length(data_all_trials)); 
@@ -41,7 +42,7 @@ ind1 = randi(length(data_all_trials));
     for ind2 = 1:(length(dtas))
         Sapp = Srec(randi(height(Srec)),:); Strl = Sapp; 
         Aapp = []; Atrl = Arec(1,:);
-        for trl = 1:min(height(Srec), 10000)
+        for trl = 1:min(height(Srec), 1000)
             Atrl.eye_px_filt_trl = rand; 
             Atrl.eye_py_filt_trl = rand;
             Atrl = phiGridInv(Atrl);
@@ -68,6 +69,7 @@ ind1 = randi(length(data_all_trials));
         Del = wT*(muE - MT(:,2:end)); Del = min(Del); 
 
         % step 4: get pi, mu 
-        Q = [Q, ReinforcementLearnGrid(@(s) wT*phiGrid(s))]; 
+        Q = [Q, ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, gamma, 1000)]; 
+        
     end
 %end
