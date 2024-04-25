@@ -1,15 +1,19 @@
 gamma = .5; % discount factor 
 phi = @(s) 1./(1 + exp(-s/20)); % sigmoid mapping to [0,1]
+inv_phi = @(ph) 20*log(ph./(1-ph)); % inv sigmoid mapping to [-inf, inf]
 
 % loop through all 
 ind1 = randi(length(data_all_trials)); 
 %for ind1 = 1:(length(data_all_trials))
+    
+    %% get muE of actual data 
     dtas = data_all_trials{ind1};
-    ind2 = randi(length(dtas));
-%    for ind2 = 1:(length(dtas))
+%    ind2 = randi(length(dtas));
+%    muE = 0;
+    muE = zeros(8, length(dtas)); 
+    for ind2 = 1:(length(dtas))
         dta = dtas(ind2);
-        Srec = []; Arec = [];
-        muE = 0;
+        Srec = []; Arec = []; 
         for trl = 1:(length(dta.task_cond))
             [Strl, Atrl] = getStateSpace(dta,trl,false);
             Srec = [Srec; Strl]; 
@@ -17,11 +21,44 @@ ind1 = randi(length(data_all_trials));
 
             Phi = phi(Strl{1:height(Strl), 1:width(Strl)}');
             Gamma = gamma.^(0:(height(Strl)-1));
-            muE = muE + Phi*Gamma'; 
-            % muE(ind2) = muE(ind2) + Phi*Gamma';
+%            muE = muE + Phi*Gamma'; 
+            muE(:,ind2) = muE(:,ind2) + Phi*Gamma';
         end
 
         Srec.Time = Srec.Time - Srec.Time(1);
-        Arec.Time = Arec.Time - Arec.Time(1);
-%    end
+        Arec.Time = Arec.Time - Arec.Time(1); 
+    end
+    muE = mean(muE,2);
+
+    %% init: randomize pi0 and get mu0 
+    mu0 = zeros(8, length(dtas));
+    for ind2 = 1:(length(dtas))
+        Sapp = Srec(randi(height(Srec)),:); Strl = Sapp; 
+        Aapp = []; Atrl = Arec(1,:);
+        for trl = 1:height(Srec)
+            Atrl.eye_px_filt_trl = inv_phi(rand); 
+            Atrl.eye_py_filt_trl = inv_phi(rand);
+            Strl = updateState(Strl, Atrl); 
+            Sapp = [Sapp; Strl]; Aapp = [Aapp; Atrl];
+        end
+        Phi = phi(Sapp{1:height(Sapp), 1:width(Sapp)}');
+        Gamma = gamma.^(0:(height(Sapp)-1));
+        mu0(:,ind2) = Phi*Gamma';
+    end
+    mu0 = mean(mu0,2);
+
+    %% iterate until policy convergence 
+    ind3 = 1; Del = inf; theta = .1;
+    MT = [muE, mu0]; YT = [1, 0]; 
+
+    while Del > theta
+
+        % step 2: get w, Del 
+        SvmMdl = fitclinear(MT', YT'); 
+        wT = SvmMdl.Beta'; wT = wT./norm(wT); % unit row vector 
+        Del = wT*(muE - MT(:,2:end)); Del = min(Del); 
+
+        % step 4: get pi, mu 
+        pol(ind3) = ReinforcementLearn(@(s) wT*phi(s)); 
+    end
 %end
