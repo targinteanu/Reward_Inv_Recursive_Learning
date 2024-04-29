@@ -42,7 +42,7 @@ ind1 = randi(length(data_all_trials));
     for ind2 = 1:(length(dtas))
         Sapp = Srec(randi(height(Srec)),:); Strl = Sapp; 
         Aapp = []; Atrl = Arec(1,:);
-        for trl = 1:min(height(Srec), 1000)
+        for trl = 1:min(height(Srec), 100)
             Atrl.eye_px_filt_trl = rand; 
             Atrl.eye_py_filt_trl = rand;
             Atrl = phiGridInv(Atrl);
@@ -57,23 +57,23 @@ ind1 = randi(length(data_all_trials));
     mu0 = mean(mu0,2);
 
     %% iterate until policy convergence 
-    ind3 = 1; Del = inf; theta = .1;
+    ind3 = 1; Del = inf; theta = 1e-5;
     MT = [muE, mu0]; YT = [1, 0]; 
-    Q = {}; 
+    Qfuns = {}; Qtbls = {};
 
     while Del > theta
 
         % step 2: get w, Del 
         SvmMdl = fitclinear(MT', YT'); 
         wT = SvmMdl.Beta'; wT = wT./norm(wT); % unit row vector 
-        Del = wT*(muE - MT(:,2:end)); Del = min(Del); 
+        Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
 
         % step 4: get pi, mu 
         [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
-        Q = [Q, Qfun]; 
+        Qfuns = {Qfuns; Qfun}; Qtbls = [Qtbls; {Qtbl}];
         Phi = phiGrid(Srl); Phi = Phi{:,:}';
         Gamma = gamma.^(0:(height(Srl)-1));
-        MT = [MT, Phi*Gamma'];
+        MT = [MT, Phi*Gamma']; YT = [YT, 0];
 
     end
 %end
