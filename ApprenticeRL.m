@@ -57,7 +57,7 @@ ind1 = randi(length(data_all_trials));
     mu0 = mean(mu0,2);
 
     %% iterate until policy convergence 
-    ind3 = 1; Del = inf; theta = 260; 
+    ind3 = 1; Del = inf; theta = 200; 
     MT = [muE, mu0]; YT = [1, 0]; 
     Qfuns = {}; Qtbls = {}; Dels = [Del];
 

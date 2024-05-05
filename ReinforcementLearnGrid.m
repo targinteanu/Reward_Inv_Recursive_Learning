@@ -29,13 +29,43 @@ for eyeX = 0:(L-1)
     end
 end
 
+Sspace = repmat({S0}, 1, L^8); % all possible states 
+ind = 1;
+for eyeX = 0:(L-1)
+    for eyeY = 0:(L-1)
+        for fixX = 0:(L-1)
+            for fixY = 0:(L-1)
+                for loX = 0:(L-1)
+                    for loY = 0:(L-1)
+                        for hiX = 0:(L-1)
+                            for hiY = 0:(L-1)
+                                S1 = S0; 
+                                S1.eye_px_filt_trl = eyeX;
+                                S1.eye_py_filt_trl = eyeY;
+                                S1.tgt_px_fx = fixX; 
+                                S1.tgt_py_fx = fixY; 
+                                S1.tgt_px_lo = loX; 
+                                S1.tgt_py_lo = loY;
+                                S1.tgt_px_hi = hiX; 
+                                S1.tgt_py_hi = hiY;
+                                Sspace{ind} = S1;
+                                ind = ind+1; 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 % start with a random state. Pick this by taking a random action from the
 % default state. 
 S0 = updateGridState(S0, Aspace{randi(L^2)});
 
-% Q table will be filled when called 
-Qtable = [nan, Aspace];
-Qtable{2,1} = S0;
+% init Q table 
+Qvals = rand(length(Sspace), length(Aspace)); Qvals = num2cell(Qvals);
+Qtable = [nan, Aspace; Sspace', Qvals];
 
 %% iteration 
 Snow = S0; 
@@ -56,65 +86,35 @@ Qfun = @(s,a) getQ(s,a);
     function q = getQ(s,a)
         if isempty(a)
             row = findQr(s);
-            q = nan(1,size(Qtable,2));
-            for col = 2:size(Qtable,2)
-                q(col) = getQrc(row,col);
-            end
+            q = [Qtable{row,2:end}]; 
         elseif isempty(s)
             col = findQc(a);
-            q = nan(size(Qtable,1),1);
-            for row = 2:size(Qtable,1)
-                q(row) = getQrc(row,col);
-            end
+            q = [Qtable{2:end,col}];
         else
-            [row,col] = findQ(s,a); 
-            getQrc(row,col);
+            row = findQr(s);
+            col = findQc(a);
+            q = Qtable{row,col};
         end
     end
-    function q = getQrc(row,col)
-        q = Qtable{row,col}; 
-        if isempty(q)
-            q = rand; 
-            Qtable{row,col} = q;
-        end
-    end
+
     function setQ(s,a,q)
-        [row,col] = findQ(s,a);
+        row = findQr(s);
+        col = findQc(a);
         Qtable{row,col} = q;
     end
 
-    function [r,c] = findQ(s,a)
-        found = false;
-        r = 2; 
-        while ~found & (r <= size(Qtable,1))
-            if isEqualState(s, Qtable{r,1})
-                % found state (row) 
-                c = findQc(a); 
-                found = true;
-            else
-                r = r+1;
-            end
-        end
-        if ~found
-            % state (row) not yet observed 
-            Qtable{r,1} = s;
-            c = findQc(a); 
-        end
-    end
-
     function r = findQr(s)
-        found = false;
-        r = 2;
-        while ~found & (r <= size(Qtable,1))
-            if isEqualState(s, Qtable{r,1})
-                found = true;
-            else
-                r = r+1;
-            end 
+        r = 0;
+        stateFound = false;
+        while ~stateFound & (r < length(Sspace))
+            r = r+1;
+            stateFound = isEqualState(s, Sspace{r});
         end
-        if ~found 
-            Qtable{r,1} = s;
+        if ~stateFound 
+            warning('State not found in table')
+            r = 1; % S0
         end
+        r = r+1;
     end
 
     function c = findQc(a)
@@ -131,8 +131,7 @@ Qfun = @(s,a) getQ(s,a);
         if ~found
             % found row but not column 
             warning('unexpected action')
-            Qtable{1,c} = a;
-            % found = true;
+            c = 2; % A0
         end
     end
 

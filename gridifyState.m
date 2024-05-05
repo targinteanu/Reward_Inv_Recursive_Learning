@@ -16,7 +16,7 @@ end
 % off-grid, [-9:.5:9], off-grid
 % mapped to integer indexes 
 
-minpos = -9; maxpos = 9; steppos = 3; 
+minpos = -10; maxpos = 10; steppos = 5; 
 posOpts = minpos:steppos:maxpos; 
 L = length(posOpts);
 

@@ -12,6 +12,7 @@ while ~stateFound & (r < length(stateSpace))
 end
 
 if ~stateFound 
+    warning('State not found in table')
     A = actSpace{1}; % move by [0, 0] 
     Q = [];
 else
