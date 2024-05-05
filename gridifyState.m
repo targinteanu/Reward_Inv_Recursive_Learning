@@ -2,6 +2,10 @@ function [gridState, posOpts] = gridifyState(contState)
 % take a continuous state and turn it into a discrete grid 
 % works for actions as well as states 
 
+if nargin == 0
+    contState = [];
+end
+
 if ~isempty(contState)
     gridState = timetable(contState.Time);
 else
@@ -12,7 +16,7 @@ end
 % off-grid, [-9:.5:9], off-grid
 % mapped to integer indexes 
 
-minpos = -9; maxpos = 9; steppos = .5; 
+minpos = -9; maxpos = 9; steppos = 3; 
 posOpts = minpos:steppos:maxpos; 
 L = length(posOpts);
 

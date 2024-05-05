@@ -57,9 +57,9 @@ ind1 = randi(length(data_all_trials));
     mu0 = mean(mu0,2);
 
     %% iterate until policy convergence 
-    ind3 = 1; Del = inf; theta = 1e-5;
+    ind3 = 1; Del = inf; theta = 260; 
     MT = [muE, mu0]; YT = [1, 0]; 
-    Qfuns = {}; Qtbls = {};
+    Qfuns = {}; Qtbls = {}; Dels = [Del];
 
     while Del > theta
 
@@ -70,7 +70,10 @@ ind1 = randi(length(data_all_trials));
 
         % step 4: get pi, mu 
         [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
-        Qfuns = {Qfuns; Qfun}; Qtbls = [Qtbls; {Qtbl}];
+        if Del <= min(Dels)
+            Dels = [Dels, Del];
+            Qfuns = {Qfuns; Qfun}; Qtbls = [Qtbls; {Qtbl}];
+        end
         Phi = phiGrid(Srl); Phi = Phi{:,:}';
         Gamma = gamma.^(0:(height(Srl)-1));
         MT = [MT, Phi*Gamma']; YT = [YT, 0];

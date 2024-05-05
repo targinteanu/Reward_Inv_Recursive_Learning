@@ -5,7 +5,8 @@ function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(R, gamma, alpha, tf
 % and as a function of [state, action] 
 
 %% initialize s and Q  
-L = 39; % position takes L possible values from 0 to L-1
+[~,posOpts] = gridifyState();
+L = length(posOpts); % position takes L possible values from 0 to L-1
 
 A0 = timetable(seconds(0), 0, 0); % null action 
 A0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl'};
