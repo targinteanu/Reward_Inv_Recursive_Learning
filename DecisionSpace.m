@@ -105,6 +105,7 @@ mu2 = muE - m;
 M = MT(:,2:end);
 lambda = quadprog(M'*M, M'*muE, -eye(size(M,2)), zeros(size(M,2),1), ones(1,size(M,2)), 1);
 mu = MT(:,2:end)*lambda;
+Qtbls = [rand(size(Qtbl)); Qtbls];
 Qtbl = zeros(size(Qtbl));
 for i = 1:length(Qtbls)
     Qtbl = Qtbl + lambda(i)*Qtbls{i};

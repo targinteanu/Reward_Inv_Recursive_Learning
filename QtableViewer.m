@@ -1,4 +1,4 @@
-figure; imagesc(Qtbls{4}); colorbar;
+figure; imagesc(Qtbls{3}); colorbar;
 ylabel('State')
 yticks(1:4)
 yticklabels({'Choice', 'At Low', 'At High', 'Waiting'})
