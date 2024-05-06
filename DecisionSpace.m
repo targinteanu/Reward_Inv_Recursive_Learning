@@ -1,9 +1,14 @@
 %% setup MDP structure without reward
-MDP = createMDP(["Choice"; "At Low"; "At High"], ["To Low"; "To High"]);
+MDP = createMDP(["Choice"; "At Low"; "At High"; "Wait"], ["To Low"; "To High"; "Fixate"]);
 MDP.T(1,2,1) = 1; 
 MDP.T(1,3,2) = 1; 
-MDP.T(2,1,:) = 1; 
-MDP.T(3,1,:) = 1;
+MDP.T(2,1,3) = 1; 
+MDP.T(3,1,3) = 1;
+MDP.T(2,4,[1,2]) = 1;
+MDP.T(3,4,[1,2]) = 1;
+MDP.T(1,1,3) = 1;
+MDP.T(4,1,3) = 1;
+MDP.T(4,4,[1,2]) = 1;
 % MDP.TerminalStates = ["At Low"; "At High"];
 
 %% setup 
@@ -12,38 +17,47 @@ ind1 = randi(length(data_all_trials));
 
 %% get muE of actual data 
 dtas = data_all_trials{ind1}; 
-muE = zeros(3, length(dtas)); 
+muE = zeros(4, length(dtas)); 
+Ssess = []; Asess = [];
 for ind2 = 1:length(dtas)
     dta = dtas(ind2);
     Srec = []; Arec = []; 
     choicetrl = dta.task_cond == 0; % choice trials only 
     for trl = 1:(length(dta.task_cond))
         if choicetrl(trl)
+            % started with fixation 
+            Arec = [Arec, 3]; 
+            Srec = [Srec, [1; 0; 0; 0]];
+            
             cueChosen = dta.choice(trl); 
             Arec = [Arec, cueChosen+1];
-            Srec = [Srec, [0; ~cueChosen; cueChosen]]; % one-hot encoding 
+            Srec = [Srec, [0; ~cueChosen; cueChosen; 0]]; % one-hot encoding 
         end
     end
     Gamma = gamma.^(0:(size(Srec,2)-1));
     muE(:,ind2) = Srec * Gamma';
+    Ssess = [Ssess, Srec]; Asess = [Asess, Arec];
 end
 muE = mean(muE, 2); 
 
 %% init: randomize pi0 and get mu0
-mu0 = zeros(3,length(dtas));
+mu0 = zeros(4,length(dtas));
 for ind2 = 1:length(dtas)
-    Sapp = [1;0;0]; Strl = Sapp; % start 
+    Sapp = [1;0;0;0]; Strl = Sapp; % start 
     Aapp = [];
     for trl = 1:min(size(Srec,2),100)
-        Atrl = randi(2); Aapp = [Aapp, Atrl]; 
+        Atrl = randi(3); Aapp = [Aapp, Atrl]; 
         % 1 = low (cueChosen = 0); 2 = high (cueChosen = 1)
         cueChosen = Atrl-1; 
         if find(Strl) == 1
             % at start 
-            Sapp = [Sapp, [0; ~cueChosen; cueChosen]];
-        else
+            Sapp = [Sapp, [0; ~cueChosen; cueChosen; 0]];
+        elseif Atrl == 3
             % goes back to start 
-            Sapp = [Sapp, 1; 0; 0];
+            Sapp = [Sapp, [1; 0; 0; 0]];
+        else
+            % nothing 
+            Sapp = [Sapp, [0; 0; 0; 1]];
         end
     end
     Gamma = gamma.^(0:(size(Sapp,2)-1));
@@ -54,7 +68,7 @@ mu0 = mean(mu0, 2);
 %% iterate until policy convergence 
 Del = inf; theta = .001;
 MT = [muE, mu0]; YT = [1, 0];
-Qfuns = {}; Qtbls = {}; Dels = [Del];
+Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
 
     while Del > theta
 
@@ -66,20 +80,35 @@ Qfuns = {}; Qtbls = {}; Dels = [Del];
         % step 4: get pi, mu 
         %[Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
         [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
-        if Del < min(Dels)
+        %if Del < min(Dels)
             Dels = [Dels, Del];
             Qtbls = [Qtbls; Qtbl];
-        else
+        %else
+        if Del >= min(Dels)
             theta = theta*5;
         end
-        Srl = zeros(3, length(Sind));
+        Srl = zeros(4, length(Sind));
         for si = 1:length(Sind)
             Srl(Sind(si),si) = 1;
         end
+        Ssim = [Ssim; {Srl}];
         Gamma = gamma.^(0:(size(Srl,2)-1));
         MT = [MT, Srl*Gamma']; YT = [YT, 0];
 
     end
+
+%% analysis 
+
+% pick best of tested policies 
+m = quadprog(eye(length(muE)), 0*muE, eye(length(muE)), muE);
+mu2 = muE - m;
+M = MT(:,2:end);
+lambda = quadprog(M'*M, M'*muE, -eye(size(M,2)), zeros(size(M,2),1), ones(1,size(M,2)), 1);
+mu = MT(:,2:end)*lambda;
+Qtbl = zeros(size(Qtbl));
+for i = 1:length(Qtbls)
+    Qtbl = Qtbl + lambda(i)*Qtbls{i};
+end
 
 %%
 function [QTable, StateSim] = doRL(MDP, w, gamma, alpha, epsilon, depsilon)
