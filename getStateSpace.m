@@ -124,9 +124,12 @@ S = S(newObs,:);
 
 A = [S.eye_px_filt_trl, S.eye_py_filt_trl]; % action uses eye position
 A = A(2:end,:) - A(1:(end-1),:); % action is change in position 
+%A = A(2:end,:); % action is saccade destination position 
 S = S(1:(end-1),:); % last observation will be counted in the next trial
 A = timetable(S.Time, A(:,1), A(:,2));
 A.Properties.VariableNames = S.Properties.VariableNames(1:2);
+
+S = centerCoords(S);
 
 %%
 

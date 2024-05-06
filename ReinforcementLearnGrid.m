@@ -29,10 +29,10 @@ for eyeX = 0:(L-1)
     end
 end
 
-Sspace = repmat({S0}, 1, L^8); % all possible states 
+Sspace = repmat({S0}, 1, L^6); % all possible states 
 ind = 1;
-for eyeX = 0:(L-1)
-    for eyeY = 0:(L-1)
+%for eyeX = 0:(L-1)
+%    for eyeY = 0:(L-1)
         for fixX = 0:(L-1)
             for fixY = 0:(L-1)
                 for loX = 0:(L-1)
@@ -40,8 +40,8 @@ for eyeX = 0:(L-1)
                         for hiX = 0:(L-1)
                             for hiY = 0:(L-1)
                                 S1 = S0; 
-                                S1.eye_px_filt_trl = eyeX;
-                                S1.eye_py_filt_trl = eyeY;
+                                %S1.eye_px_filt_trl = eyeX;
+                                %S1.eye_py_filt_trl = eyeY;
                                 S1.tgt_px_fx = fixX; 
                                 S1.tgt_py_fx = fixY; 
                                 S1.tgt_px_lo = loX; 
@@ -56,8 +56,8 @@ for eyeX = 0:(L-1)
                 end
             end
         end
-    end
-end
+%    end
+%end
 
 % start with a random state. Pick this by taking a random action from the
 % default state. 

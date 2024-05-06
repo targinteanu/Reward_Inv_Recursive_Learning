@@ -17,6 +17,7 @@ ind1 = randi(length(data_all_trials));
     for ind2 = 1:(length(dtas))
         dta = dtas(ind2);
         Srec = []; Arec = []; 
+        trlct = 0;
         for trl = 1:(length(dta.task_cond))
             [Strl, Atrl] = getStateSpace(dta,trl,false);
             Strl = gridifyState(Strl); Atrl = gridifyState(Atrl);
@@ -28,8 +29,13 @@ ind1 = randi(length(data_all_trials));
                 Phi = phiGrid(Strl); Phi = Phi{:,:}';
                 Gamma = gamma.^(0:(height(Strl)-1));
 %               muE = muE + Phi*Gamma';
-                muE(:,ind2) = muE(:,ind2) + Phi*Gamma';
+                muE(:,ind2) = muE(:,ind2) + Phi*Gamma'; 
+                trlct = trlct + 1;
             end
+        end
+
+        if trlct
+            muE(:,ind2) = muE(:,ind2)/trlct;
         end
 
         Srec.Time = Srec.Time - Srec.Time(1);
@@ -57,7 +63,7 @@ ind1 = randi(length(data_all_trials));
     mu0 = mean(mu0,2);
 
     %% iterate until policy convergence 
-    ind3 = 1; Del = inf; theta = 200; 
+    ind3 = 1; Del = inf; theta = .01; 
     MT = [muE, mu0]; YT = [1, 0]; 
     Qfuns = {}; Qtbls = {}; Dels = [Del];
 

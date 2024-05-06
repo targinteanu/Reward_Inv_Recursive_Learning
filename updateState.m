@@ -22,7 +22,8 @@ function s2 = updateState(s1, a1)
 reward_area = 4.8; 
 reward_radius = sqrt(reward_area/pi);
 
-pos_new = [s1.eye_px_filt_trl, s1.eye_py_filt_trl] + [a1.eye_px_filt_trl, a1.eye_py_filt_trl];
+%pos_new = [s1.eye_px_filt_trl, s1.eye_py_filt_trl] + [a1.eye_px_filt_trl, a1.eye_py_filt_trl];
+pos_new = [a1.eye_px_filt_trl, a1.eye_py_filt_trl];
 tgt_fx  = [s1.tgt_px_fx, s1.tgt_py_fx]; % fixation
 tgt_lo  = [s1.tgt_px_lo, s1.tgt_py_lo]; % low reward
 tgt_hi  = [s1.tgt_px_hi, s1.tgt_py_hi]; % high reward
@@ -55,5 +56,7 @@ else
     % expected: enviro stays the same (do nothing else)
 
 end
+
+s2 = centerCoords(s2);
 
 end
