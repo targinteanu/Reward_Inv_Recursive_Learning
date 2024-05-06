@@ -2,7 +2,9 @@
 MDP = createMDP(["Choice"; "At Low"; "At High"], ["To Low"; "To High"]);
 MDP.T(1,2,1) = 1; 
 MDP.T(1,3,2) = 1; 
-MDP.TerminalStates = ["At Low"; "At High"];
+MDP.T(2,1,:) = 1; 
+MDP.T(3,1,:) = 1;
+% MDP.TerminalStates = ["At Low"; "At High"];
 
 %% setup 
 gamma = .5;
@@ -63,10 +65,12 @@ Qfuns = {}; Qtbls = {}; Dels = [Del];
 
         % step 4: get pi, mu 
         %[Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
-        [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.1, 0.1);
-        if Del <= min(Dels)
+        [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
+        if Del < min(Dels)
             Dels = [Dels, Del];
             Qtbls = [Qtbls; Qtbl];
+        else
+            theta = theta*5;
         end
         Srl = zeros(3, length(Sind));
         for si = 1:length(Sind)
@@ -110,7 +114,7 @@ qAgent = rlQAgent(qRepresentation,agentOpts);
 
 trainOpts = rlTrainingOptions;
 trainOpts.MaxStepsPerEpisode = 50;
-trainOpts.MaxEpisodes = 500;
+trainOpts.MaxEpisodes = 200;
 trainOpts.StopTrainingCriteria = "AverageReward";
 trainOpts.StopTrainingValue = 13;
 trainOpts.ScoreAveragingWindowLength = 30;
