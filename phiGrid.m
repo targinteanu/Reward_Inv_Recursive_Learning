@@ -3,7 +3,8 @@ function sNorm = phiGrid(sGrid)
 
 sNorm = timetable(sGrid.Time);
 
-L = 38; % sGrid entries will be in range [0, L] 
+[~,posOpts] = gridifyState();
+L = length(posOpts); % sGrid entries will be in range [0, L] 
 
 for c = 1:width(sGrid)
     varname = sGrid.Properties.VariableNames{c};
