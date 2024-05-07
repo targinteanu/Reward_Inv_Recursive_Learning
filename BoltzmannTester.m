@@ -1,3 +1,7 @@
+%% BoltzmannTester 
+% Find the Boltzmann rationality by observing all trials. This calls
+% external functions with "Boltzmann" in the function name. 
+
 %% load all data 
 data_all_trials = Load_Analyzed_Data({'Y:\Ephys\data_132F\2024-02\', 'Y:\Ephys\data_132F\2024-03\', 'Y:\Ephys\data_132F\2024-04\'});
 

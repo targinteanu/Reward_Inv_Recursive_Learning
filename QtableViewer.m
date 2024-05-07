@@ -1,3 +1,6 @@
+%% QtableViewer 
+% take a specified Q table from the MDP "decision space" formulation and
+% display it with labels.
 figure; imagesc(Qtbls{3}); colorbar;
 ylabel('State')
 yticks(1:4)

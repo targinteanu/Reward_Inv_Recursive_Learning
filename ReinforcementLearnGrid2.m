@@ -1,6 +1,9 @@
 function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid2(R, gamma, alpha, tf)
+% This was a second attempt that was not used at the time of project
+% submission. 
 % use Q learning to determine the optimal value function Q given the reward
 % function R(s)
+% second attempt - put the states into a MDP and make use of MATLAB RL toolbox 
 % Return Q as a table with possible states as rows and actions as columns 
 % and as a function of [state, action] 
 

@@ -1,3 +1,11 @@
+%% DecisionSpace
+% Run through the apprentice algorithm for the MDP "decision space"
+% formulation of the problem. This uses MATLAB's RL toolbox for Q learning.
+% A helper function at the bottom manages the Q learning step. 
+% This does not call external functions except for loading the data below. 
+
+data_all_trials = Load_Analyzed_Data();
+
 %% setup MDP structure without reward
 MDP = createMDP(["Choice"; "At Low"; "At High"; "Wait"], ["To Low"; "To High"; "Fixate"]);
 MDP.T(1,2,1) = 1; 
@@ -78,7 +86,6 @@ Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
         Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
 
         % step 4: get pi, mu 
-        %[Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
         [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
         %if Del < min(Dels)
             Dels = [Dels, Del];

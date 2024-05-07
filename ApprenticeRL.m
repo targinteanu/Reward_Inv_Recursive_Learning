@@ -1,3 +1,10 @@
+%% ApprenticeRL 
+% Run through the apprentice algorithm for the 2D grid-world state space
+% formulation of the problem. Does not use MATLAB's RL toolbox. 
+% This calls various external functions with "State" or "Grid" in the
+% function name, and uses the external function "ReinforcementLearnGrid" 
+% to manage the Q learning step. 
+
 gamma = .5; % discount factor 
 %{
 phi = @(s) 1./(1 + exp(-s/20)); % sigmoid mapping to [0,1]
