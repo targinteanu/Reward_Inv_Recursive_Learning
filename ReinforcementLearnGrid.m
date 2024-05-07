@@ -6,6 +6,7 @@ function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(R, gamma, alpha, tf
 
 %% initialize s and Q  
 [~,posOpts] = gridifyState();
+posOpts = [-inf,posOpts,inf];
 L = length(posOpts); % position takes L possible values from 0 to L-1
 
 A0 = timetable(seconds(0), 0, 0); % null action 

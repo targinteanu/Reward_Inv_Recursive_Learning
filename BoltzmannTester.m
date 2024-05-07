@@ -17,6 +17,7 @@ for ind1 = 1:length(data_all_trials)
     NT = NT + length(dta);
 end
 Ni = 1;
+difftesttrain = 8;
 
 boltz1 = zeros(NT,1); boltz2 = zeros(NT,1); boltz3 = zeros(NT,1);
 L1 = zeros(NT,1); L2 = zeros(NT,1); L3 = zeros(NT,1);
@@ -43,12 +44,16 @@ for ind1 = 1:length(data_all_trials)
           alpha_end, beta_end, denom_end, h_end, n_end] = ...
         getBoltzmann(dta, false, alpha0, beta0);
 
-        if Ni <= 8
+        if Ni <= difftesttrain
             b1 = boltz_rat; b2 = boltz_bay1; b3 = boltz_bay2;
         else
-            b1 = boltz1(Ni-8); 
-            b2 = boltz2(Ni-8);
-            b3 = boltz3(Ni-8);
+            b1 = boltz1(Ni-difftesttrain); 
+            b2 = boltz2(Ni-difftesttrain);
+
+            b3 = boltz3((Ni-difftesttrain):(Ni-1));
+            b3 = b3(~isnan(b3)); 
+            b3 = [b3; nan]; 
+            b3 = b3(1);
         end
         [mean_acc_rat2, mean_acc_bay12, mean_acc_bay22] = ...
         giveBoltzmann(dta, [b1, b2, b3], false, alpha0, beta0);
@@ -78,7 +83,7 @@ end
 
 pRew = h./n;
 
-P4(1:8) = nan; P5(1:8) = nan; P6(1:8) = nan;
+P4(1:difftesttrain) = nan; P5(1:difftesttrain) = nan; P6(1:difftesttrain) = nan;
 %% show results 
 
 %{
@@ -131,7 +136,7 @@ ylabel('\beta'); xlabel('recording');
 xticks(sessInd);
 
 subplot(2,1,1); hold on;
-plot(P5(sesssel), 'LineWidth',1); grid on; 
+plot(P6(sesssel), 'LineWidth',1); grid on; 
 legend({'Current \beta', 'Previous \beta'}, 'Location','best')
 
 %% stats 

@@ -8,6 +8,8 @@ function [boltz_rat, boltz_bay1, boltz_bay2, ...
 % If depict is true, details will be shown. 
 % alpha0 and beta0 define the initial prior pdf, with h ~ alpha0 
 %   and n ~ alpha0 + beta0 (i.e. MLE = alpha0/(alpha0+beta0)
+% try a few different methods for the expected reward: ratio h/n (rat),
+% bayesian maximum likelihood (bay1), bayesian expected value (bay2). 
 
 if nargin < 4
     beta0 = [];

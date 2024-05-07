@@ -2,10 +2,8 @@ function [mean_acc_rat, mean_acc_bay1, mean_acc_bay2, ...
           alpha_end, beta_end, denom_end, h_end, n_end] = ...
     giveBoltzmann(dta, boltz, depict, alpha0, beta0)
 % stateless Boltzmann decision-making 
-% Determine Boltzmann rationality during a single rec data (dta). 
-% If depict is true, details will be shown. 
-% alpha0 and beta0 define the initial prior pdf, with h ~ alpha0 
-%   and n ~ alpha0 + beta0 (i.e. MLE = alpha0/(alpha0+beta0)
+% input the Boltzmann rationality, and determine the probability of these
+% trials under the resulting proposed PDF. 
 
 boltz_rat = boltz(1); 
 boltz_bay1 = boltz(2); 
