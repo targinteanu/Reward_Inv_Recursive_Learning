@@ -1,6 +1,6 @@
-function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(R, gamma, alpha, tf)
+function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(wT, gamma, alpha, tf)
 % use Q learning to determine the optimal value function Q given the reward
-% function R(s)
+% function R(s) = wT*Phi(s)
 % Return Q as a table with possible states as rows and actions as columns 
 % and as a function of [state, action] 
 
@@ -18,6 +18,8 @@ S0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl', ...
     'tgt_px_fx', 'tgt_py_fx', 'tgt_px_lo', 'tgt_py_lo', 'tgt_px_hi', 'tgt_py_hi'};
 S0 = gridifyState(S0);
 
+disp('Getting action space...')
+
 Aspace = repmat({A0}, 1, L^2); % all possible actions 
 % ind = 1;
 for eyeX = 0:(L-1)
@@ -30,6 +32,8 @@ for eyeX = 0:(L-1)
         % ind = ind+1;
     end
 end
+
+disp('Getting state space...')
 
 Sspace = repmat({S0}, 1, L^6); % all possible states 
 % ind = 1;
@@ -70,13 +74,15 @@ S0 = updateGridState(S0, Aspace{randi(L^2)});
 Qvals = rand(length(Sspace), length(Aspace)); Qvals = num2cell(Qvals);
 Qtable = [nan, Aspace; Sspace', Qvals];
 
+disp('Q table initialized.')
+
 %% iteration 
 Snow = S0; 
 Sall = repmat(S0, tf, 1); Aall = repmat(A0, tf, 1);
 for t = 1:tf
     Qs = getQ(Snow, []); [q1,indMax] = max(Qs); At = Qtable{1,indMax+1};
     Snxt = updateGridState(Snow, At); 
-    rew = R(Snxt);
+    unwrappedPhi = phiGrid(Snxt); unwrappedPhi = unwrappedPhi{:,:}'; rew = wT*unwrappedPhi;
     Qs = getQ(Snxt, []); [maxQ,indMax] = max(Qs); 
     q2 = rew + gamma * maxQ;
     setQ(Snow,At, (1-alpha)*q1 + alpha*q2);

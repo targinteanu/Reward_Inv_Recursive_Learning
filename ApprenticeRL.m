@@ -82,7 +82,7 @@ ind1 = randi(length(data_all_trials));
         Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
 
         % step 4: get pi, mu 
-        [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(@(s) wT*unwrapPhi(phiGrid(s)), gamma, .8, 100);
+        [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(wT, gamma, .8, 100);
         if Del <= min(Dels)
             Dels = [Dels, Del];
             Qfuns = {Qfuns; Qfun}; Qtbls = [Qtbls; {Qtbl}];
