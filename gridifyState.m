@@ -25,6 +25,10 @@ for c = 1:width(contState)
     gridvals = uint8(zeros(height(contState),1));
     for r = 1:height(contState)
         contval = contState{r,c};
+        if isnan(contval)
+            warning('NaN position')
+            contval = 0;
+        end
         if contval > maxpos + steppos/2
             % off-grid + 
             gridvals(r) = L+1;
