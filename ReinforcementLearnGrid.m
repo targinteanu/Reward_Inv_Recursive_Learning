@@ -7,7 +7,7 @@ function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid(R, gamma, alpha, tf
 %% initialize s and Q  
 [~,posOpts] = gridifyState();
 posOpts = [-inf,posOpts,inf];
-L = length(posOpts); % position takes L possible values from 0 to L-1
+L = length(posOpts); % position takes L possible values from 0 to L-1 (base L digit) 
 
 A0 = timetable(seconds(0), 0, 0); % null action 
 A0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl'};
@@ -19,19 +19,20 @@ S0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl', ...
 S0 = gridifyState(S0);
 
 Aspace = repmat({A0}, 1, L^2); % all possible actions 
-ind = 1;
+% ind = 1;
 for eyeX = 0:(L-1)
     for eyeY = 0:(L-1)
         A1 = A0; 
         A1.eye_px_filt_trl = eyeX; 
         A1.eye_py_filt_trl = eyeY; 
+        ind = state2ind(A1);
         Aspace{ind} = A1;
-        ind = ind+1;
+        % ind = ind+1;
     end
 end
 
 Sspace = repmat({S0}, 1, L^6); % all possible states 
-ind = 1;
+% ind = 1;
 %for eyeX = 0:(L-1)
 %    for eyeY = 0:(L-1)
         for fixX = 0:(L-1)
@@ -49,8 +50,9 @@ ind = 1;
                                 S1.tgt_py_lo = loY;
                                 S1.tgt_px_hi = hiX; 
                                 S1.tgt_py_hi = hiY;
+                                ind = state2ind(S1); 
                                 Sspace{ind} = S1;
-                                ind = ind+1; 
+                                % ind = ind+1; 
                             end
                         end
                     end
@@ -73,7 +75,8 @@ Snow = S0;
 Sall = repmat(S0, tf, 1); Aall = repmat(A0, tf, 1);
 for t = 1:tf
     Qs = getQ(Snow, []); [q1,indMax] = max(Qs); At = Qtable{1,indMax+1};
-    Snxt = updateGridState(Snow, At); rew = R(Snxt);
+    Snxt = updateGridState(Snow, At); 
+    rew = R(Snxt);
     Qs = getQ(Snxt, []); [maxQ,indMax] = max(Qs); 
     q2 = rew + gamma * maxQ;
     setQ(Snow,At, (1-alpha)*q1 + alpha*q2);
@@ -84,7 +87,17 @@ end
 Qfun = @(s,a) getQ(s,a);
 
 %% helper
-    function q = getQ(s,a)
+    function ind = state2ind(S)
+        % produce an index (>= 1) that is unique to the state 
+        % S is a single state, not a list 
+        S = S{1,:}; 
+        S = num2str(S(:))';
+        ind = base2dec(S,L);
+        ind = ind+1;
+    end
+
+    function [q, row, col] = getQ(s,a)
+        row = []; col = [];
         if isempty(a)
             row = findQr(s);
             q = [Qtable{row,2:end}]; 
@@ -105,34 +118,42 @@ Qfun = @(s,a) getQ(s,a);
     end
 
     function r = findQr(s)
-        r = 0;
-        stateFound = false;
-        while ~stateFound & (r < length(Sspace))
-            r = r+1;
-            stateFound = isEqualState(s, Sspace{r});
-        end
-        if ~stateFound 
-            warning('State not found in table')
-            r = 1; % S0
+        r = state2ind(s); 
+        if ~isEqualState(s, Sspace{r})
+            warning('State not at expected place in table.')
+            r = 0;
+            stateFound = false;
+            while ~stateFound & (r < length(Sspace))
+                r = r+1;
+                stateFound = isEqualState(s, Sspace{r});
+            end
+            if ~stateFound
+                warning('State not found in table.')
+                r = 1; % S0
+            end
         end
         r = r+1;
     end
 
     function c = findQc(a)
-        found = false;
-        c = 2; 
-        while ~found & (c <= size(Qtable,2))
-            if isEqualState(a, Qtable{1,c})
-                % found action (col) 
-                found = true;
-            else
-                c = c+1;
+        c = state2ind(a) + 1;
+        if ~isEqualState(a, Qtable{1,c})
+            warning('Action not at expected place in table.')
+            found = false;
+            c = 2;
+            while ~found & (c <= size(Qtable,2))
+                if isEqualState(a, Qtable{1,c})
+                    % found action (col)
+                    found = true;
+                else
+                    c = c+1;
+                end
             end
-        end
-        if ~found
-            % found row but not column 
-            warning('unexpected action')
-            c = 2; % A0
+            if ~found
+                % found row but not column
+                warning('unexpected action')
+                c = 2; % A0
+            end
         end
     end
 
