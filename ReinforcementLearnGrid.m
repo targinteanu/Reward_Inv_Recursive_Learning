@@ -72,6 +72,7 @@ S0 = updateGridState(S0, Aspace{randi(L^2)});
 
 % init Q table 
 Qvals = rand(length(Sspace), length(Aspace)); Qvals = num2cell(Qvals);
+Qvals = single(Qvals);
 Qtable = [nan, Aspace; Sspace', Qvals];
 
 disp('Q table initialized.')
@@ -120,7 +121,7 @@ Qfun = @(s,a) getQ(s,a);
     function setQ(s,a,q)
         row = findQr(s);
         col = findQc(a);
-        Qtable{row,col} = q;
+        Qtable{row,col} = single(q);
     end
 
     function r = findQr(s)
