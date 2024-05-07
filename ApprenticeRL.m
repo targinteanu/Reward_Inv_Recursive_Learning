@@ -5,6 +5,8 @@
 % function name, and uses the external function "ReinforcementLearnGrid" 
 % to manage the Q learning step. 
 
+data_all_trials = Load_Analyzed_Data();
+
 gamma = .5; % discount factor 
 %{
 phi = @(s) 1./(1 + exp(-s/20)); % sigmoid mapping to [0,1]
@@ -49,6 +51,7 @@ ind1 = randi(length(data_all_trials));
         Arec.Time = Arec.Time - Arec.Time(1); 
     end
     muE = mean(muE,2);
+    clear dta trlct Phi Gamma 
 
     %% init: randomize pi0 and get mu0 
     mu0 = zeros(8, length(dtas));
@@ -68,6 +71,7 @@ ind1 = randi(length(data_all_trials));
         mu0(:,ind2) = Phi*Gamma';
     end
     mu0 = mean(mu0,2);
+    clear Sapp Aapp Phi Gamma 
 
     %% iterate until policy convergence 
     ind3 = 1; Del = inf; theta = .01; 
@@ -80,6 +84,7 @@ ind1 = randi(length(data_all_trials));
         SvmMdl = fitclinear(MT', YT'); 
         wT = SvmMdl.Beta'; wT = wT./norm(wT); % unit row vector 
         Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
+        clear SvmMdl
 
         % step 4: get pi, mu 
         [Qfun, Qtbl, Srl] = ReinforcementLearnGrid(wT, gamma, .8, 100);

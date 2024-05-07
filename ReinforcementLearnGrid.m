@@ -27,7 +27,10 @@ for eyeX = 0:(L-1)
         A1 = A0; 
         A1.eye_px_filt_trl = eyeX; 
         A1.eye_py_filt_trl = eyeY; 
-        ind = state2ind(A1);
+        ind = act2ind(A1);
+        if ind > length(Aspace)
+            error('Action exceeds table size.')
+        end
         Aspace{ind} = A1;
         % ind = ind+1;
     end
@@ -55,6 +58,9 @@ Sspace = repmat({S0}, 1, L^6); % all possible states
                                 S1.tgt_px_hi = hiX; 
                                 S1.tgt_py_hi = hiY;
                                 ind = state2ind(S1); 
+                                if ind > length(Sspace)
+                                    error('State exceeds table size.');
+                                end
                                 Sspace{ind} = S1;
                                 % ind = ind+1; 
                             end
@@ -71,8 +77,9 @@ Sspace = repmat({S0}, 1, L^6); % all possible states
 S0 = updateGridState(S0, Aspace{randi(L^2)});
 
 % init Q table 
-Qvals = rand(length(Sspace), length(Aspace)); Qvals = num2cell(Qvals);
+Qvals = rand(length(Sspace), length(Aspace)); 
 Qvals = single(Qvals);
+Qvals = num2cell(Qvals);
 Qtable = [nan, Aspace; Sspace', Qvals];
 
 disp('Q table initialized.')
@@ -94,13 +101,22 @@ end
 Qfun = @(s,a) getQ(s,a);
 
 %% helper
-    function ind = state2ind(S)
-        % produce an index (>= 1) that is unique to the state 
+    function ind = grid2ind(S, removeEye)
+        % produce an index (>= 1) that is unique to the grid-world coords 
         % S is a single state, not a list 
         S = S{1,:}; 
         S = num2str(S(:))';
+        if removeEye
+            S = S(3:end); % remove eye position 
+        end
         ind = base2dec(S,L);
         ind = ind+1;
+    end
+    function ind = state2ind(S)
+        ind = grid2ind(S, true); 
+    end
+    function ind = act2ind(A)
+        ind = grid2ind(A, false);
     end
 
     function [q, row, col] = getQ(s,a)
@@ -143,7 +159,7 @@ Qfun = @(s,a) getQ(s,a);
     end
 
     function c = findQc(a)
-        c = state2ind(a) + 1;
+        c = act2ind(a) + 1;
         if ~isEqualState(a, Qtable{1,c})
             warning('Action not at expected place in table.')
             found = false;
