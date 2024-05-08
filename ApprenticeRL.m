@@ -151,7 +151,7 @@ while Del > theta
     Qtbl = single(Qtbl);
 
     % step 4: get pi, mu 
-    [~, Qtbl2, Srl] = ReinforcementLearnGrid(wT, gamma, .8, 200, L, Qstate, Qaction, Qtbl);
+    [~, Qtbl2, Srl] = ReinforcementLearnGrid3(wT, gamma, .8, 10, L, Qstate, Qaction, Qtbl);
     if Del >= min(Dels)
         theta = theta*5;
     end

@@ -10,17 +10,37 @@ Qtable2 = Qtable;
 
 alpha = single(alpha); gamma = single(gamma);
 
+T = uint8(Qtable2); % state transitions 
+
+%% get all state transitions 
+disp('Determining state transitions...')
+for r = 1:length(Sspace)
+    Snow = Sspace{r}; 
+    for c = 1:length(Aspace)
+        At = Aspace{c};
+        Snxt = updateGridState(Snow,At);
+        r2 = state2ind(Snxt,L);
+        T(r,c) = r2;
+    end
+end
+
+%% get all state rewards 
+disp('Determining state rewards...')
+R = single(zeros(size(Sspace))); 
+for r = 1:length(R)
+    Snow = Sspace{r}; 
+    unwrappedPhi = phiGrid(Snow); unwrappedPhi = unwrappedPhi{:,:}';
+    R(r) = single(wT*unwrappedPhi);
+end
+
 %% reverse iteration 
 disp('Reverse Iterating...')
 for t = fliplr(1:tf)
     for r = 1:length(Sspace)
-        Snow = Sspace{r};
         for c = 1:length(Aspace)
-            At = Aspace{c};
-            Snxt = updateGridState(Snow,At); 
-            unwrappedPhi = phiGrid(Snxt); unwrappedPhi = unwrappedPhi{:,:}'; 
-            Qs = getQ(Snxt, []); [maxQ,indMax] = max(Qs);
-            rew = wT*unwrappedPhi; rew = single(rew);
+            r2 = T(r,c);
+            Qs = Qtable(r2,:); [maxQ,indMax] = max(Qs);
+            rew = R(r2);
             Qtable2(r,c) = rew + gamma*maxQ; 
         end
     end
@@ -32,12 +52,12 @@ Qfun = @(s,a) getQ(s,a);
 disp('Forward Iterating...')
 S0 = Sspace{randi(length(Sspace))}; 
 Sall = repmat(S0, tf, 1); Aall = repmat(A0, tf, 1);
-Snow = S0;
+Snow = S0; r = state2ind(Snow,L);
 for t = 1:tf
-    Qs = getQ(Snow, []); [q1,indMax] = max(Qs); At = Aspace{indMax};
-    Snxt = updateGridState(Snow, At); 
+    Qs = Qtable(r,:); [q1,indMax] = max(Qs); At = Aspace{indMax};
+    r2 = T(r,indMax); Snxt = Sspace{r2};
     Sall(t,:) = Snow; Aall(t,:) = At;
-    Snow = Snxt;
+    Snow = Snxt; r = r2;
 end
 
 %% helper
