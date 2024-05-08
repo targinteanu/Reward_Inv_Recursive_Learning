@@ -133,6 +133,20 @@ clear eyeX eyeY fixX fixY loX loY hiX hiY A1 S1
 
 disp('State-Action space initialized.')
 
+%% get all state transitions 
+disp('Determining state transitions...')
+T = uint8(zeros(length(Qstate), length(Qaction))); % state transitions 
+for r = 1:length(Qstate)
+    Snow = Qstate{r}; 
+    for c = 1:length(Qaction)
+        At = Qaction{c};
+        Snxt = updateGridState(Snow,At);
+        r2 = state2ind(Snxt,L);
+        T(r,c) = r2;
+    end
+end
+clear r c r2 Snow Snxt At
+
 %% iterate until policy convergence 
 Del = inf; theta = .001; 
 MT = [muE, mu0]; YT = [1, 0]; 

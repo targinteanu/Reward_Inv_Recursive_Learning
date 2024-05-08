@@ -1,28 +1,14 @@
-function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid3(wT, gamma, alpha, tf, L, Sspace, Aspace, Qtable)
+function [Qfun, Qtable, Sall, Aall] = ReinforcementLearnGrid3(wT, gamma, alpha, tf, L, Sspace, Aspace, T)
 % solve all possibilities of Bellman equations given the reward
 % function R(s) = wT*Phi(s)
 % Return Q as a table with possible states as rows and actions as columns 
 % and as a function of [state, action] 
 
 %% initialize 
-Qtable = single(zeros(size(Qtable))); % ?
+Qtable = single(zeros(size(T))); % ?
 Qtable2 = Qtable; 
 
 alpha = single(alpha); gamma = single(gamma);
-
-T = uint8(Qtable2); % state transitions 
-
-%% get all state transitions 
-disp('Determining state transitions...')
-for r = 1:length(Sspace)
-    Snow = Sspace{r}; 
-    for c = 1:length(Aspace)
-        At = Aspace{c};
-        Snxt = updateGridState(Snow,At);
-        r2 = state2ind(Snxt,L);
-        T(r,c) = r2;
-    end
-end
 
 %% get all state rewards 
 disp('Determining state rewards...')
