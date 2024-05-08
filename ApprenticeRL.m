@@ -44,6 +44,9 @@ end
 muE = mean(muE,2);
 clear dta trlct Phi Gamma 
 
+%% load items to construct MDP and Q table 
+load('StateQT.mat');
+
 %% init apprentice: randomize pi0 and get mu0 
 disp('Initializing Apprentice...')
 mu0 = zeros(8, length(dtas));
@@ -63,89 +66,6 @@ for ind2 = 1:(length(dtas))
 end
 mu0 = mean(mu0,2);
 clear Sapp Aapp Phi Gamma 
-
-%% init empty Q table 
-
-[~,posOpts] = gridifyState();
-posOpts = [-inf,posOpts,inf];
-L = length(posOpts); % position takes L possible values from 0 to L-1 (base L digit) 
-
-A0 = timetable(seconds(0), 0, 0); % null action 
-A0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl'};
-A0 = gridifyState(A0); 
-
-S0 = timetable(seconds(0), 0,0, 0,0, inf,inf, inf,inf); % default state
-S0.Properties.VariableNames = {'eye_px_filt_trl', 'eye_py_filt_trl', ...
-    'tgt_px_fx', 'tgt_py_fx', 'tgt_px_lo', 'tgt_py_lo', 'tgt_px_hi', 'tgt_py_hi'};
-S0 = gridifyState(S0);
-
-disp('Getting action space...')
-
-Qaction = repmat({A0}, 1, L^2); % all possible actions 
-for eyeX = 0:(L-1)
-    for eyeY = 0:(L-1)
-        A1 = A0; 
-        A1.eye_px_filt_trl = eyeX; 
-        A1.eye_py_filt_trl = eyeY; 
-        ind = act2ind(A1,L);
-        if ind > length(Qaction)
-            error('Action exceeds table size.')
-        end
-        Qaction{ind} = A1;
-    end
-end
-
-disp('Getting state space...')
-
-Qstate = repmat({S0}, 1, L^6); % all possible states 
-%for eyeX = 0:(L-1)
-%    for eyeY = 0:(L-1)
-        for fixX = 0:(L-1)
-            for fixY = 0:(L-1)
-                for loX = 0:(L-1)
-                    for loY = 0:(L-1)
-                        for hiX = 0:(L-1)
-                            for hiY = 0:(L-1)
-                                S1 = S0; 
-                                %S1.eye_px_filt_trl = eyeX;
-                                %S1.eye_py_filt_trl = eyeY;
-                                S1.tgt_px_fx = fixX; 
-                                S1.tgt_py_fx = fixY; 
-                                S1.tgt_px_lo = loX; 
-                                S1.tgt_py_lo = loY;
-                                S1.tgt_px_hi = hiX; 
-                                S1.tgt_py_hi = hiY;
-                                ind = state2ind(S1,L); 
-                                if ind > length(Qstate)
-                                    error('State exceeds table size.');
-                                end
-                                Qstate{ind} = S1;
-                            end
-                        end
-                    end
-                end
-            end
-        end
-%    end
-%end
-
-clear eyeX eyeY fixX fixY loX loY hiX hiY A1 S1
-
-disp('State-Action space initialized.')
-
-%% get all state transitions 
-disp('Determining state transitions...')
-T = uint8(zeros(length(Qstate), length(Qaction))); % state transitions 
-for r = 1:length(Qstate)
-    Snow = Qstate{r}; 
-    for c = 1:length(Qaction)
-        At = Qaction{c};
-        Snxt = updateGridState(Snow,At);
-        r2 = state2ind(Snxt,L);
-        T(r,c) = r2;
-    end
-end
-clear r c r2 Snow Snxt At
 
 %% iterate until policy convergence 
 Del = inf; theta = .001; 
