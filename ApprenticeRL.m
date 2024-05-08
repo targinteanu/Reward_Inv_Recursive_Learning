@@ -143,7 +143,7 @@ while Del > theta
     % step 2: get w, Del 
     SvmMdl = fitclinear(MT', YT'); 
     wT = SvmMdl.Beta'; wT = wT./norm(wT); % unit row vector 
-    Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
+    Del = abs(wT*(muE - MT(:,2:end))); Del = min(Del) 
     clear SvmMdl
 
     % init Q table 
@@ -152,13 +152,13 @@ while Del > theta
 
     % step 4: get pi, mu 
     [~, Qtbl2, Srl] = ReinforcementLearnGrid(wT, gamma, .8, 200, L, Qstate, Qaction, Qtbl);
+    if Del >= min(Dels)
+        theta = theta*5;
+    end
     %if Del <= min(Dels)
         Dels = [Dels, Del];
         Qtbls = cat(3,Qtbls,Qtbl2);
     %end
-    if Del >= min(Dels)
-        theta = theta*5;
-    end
     Phi = phiGrid(Srl); Phi = Phi{:,:}';
     Gamma = gamma.^(0:(height(Srl)-1));
     MT = [MT, Phi*Gamma']; YT = [YT, 0];

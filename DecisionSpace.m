@@ -83,17 +83,17 @@ Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
         % step 2: get w, Del 
         SvmMdl = fitclinear(MT', YT'); 
         wT = SvmMdl.Beta'; wT = wT./norm(wT); % unit row vector 
-        Del = wT*(muE - MT(:,2:end)); Del = min(Del) 
+        Del = abs(wT*(muE - MT(:,2:end))); Del = min(Del) 
 
         % step 4: get pi, mu 
         [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
+        if Del >= min(Dels)
+            theta = theta*5;
+        end
         %if Del < min(Dels)
             Dels = [Dels, Del];
             Qtbls = [Qtbls; Qtbl];
         %else
-        if Del >= min(Dels)
-            theta = theta*5;
-        end
         Srl = zeros(4, length(Sind));
         for si = 1:length(Sind)
             Srl(Sind(si),si) = 1;
