@@ -78,6 +78,7 @@ for bd = basedirs
                                         clear trl tempX tempY
 
                                         tr_d = struct();
+                                        tr_d.name = [session.name,'_',rec.name];
                                         for fld = fieldsToCopy
                                             fld = fld{:};
                                             eval(['tr_d.',fld,' = trials_data.',fld,';']);
