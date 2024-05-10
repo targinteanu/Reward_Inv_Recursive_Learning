@@ -73,7 +73,7 @@ LS = length(Qstate); LA = length(Qaction);
 [C,R] = meshgrid(1:LA, 1:LS);
 iter2c = C(:); iter2r = R(:); % flatten 
 LRC = length(iter2c);
-T = uint8(zeros(LS, LA)); % state transitions 
+T = uint32(zeros(LS, LA)); % state transitions 
 T = T(:); % flatten 
 parfor iter = 1:LRC
     r = iter2r(iter); % unflatten
@@ -82,6 +82,9 @@ parfor iter = 1:LRC
     At = Qaction{c};
     Snxt = updateGridState(Snow,At);
     r2 = state2ind(Snxt,L);
+    if r2 > intmax('uint32')
+        error(['Saturated at r2 = ',num2str(r2),' on iteration ',num2str(iter)]);
+    end
     T(iter) = r2;
 end
 T = reshape(T,[LS,LA]);
