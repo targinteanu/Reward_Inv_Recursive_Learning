@@ -45,7 +45,7 @@ muE = mean(muE,2);
 clear dta trlct Phi Gamma 
 
 %% load items to construct MDP and Q table 
-load('StateQT.mat');
+load('StateQT1.mat', 'Qstate','Qaction','L','S0','A0','posOpts');
 
 %% init apprentice: randomize pi0 and get mu0 
 disp('Initializing Apprentice...')
@@ -85,7 +85,7 @@ while Del > theta
     Qtbl = single(Qtbl);
 
     % step 4: get pi, mu 
-    [~, Qtbl2, Srl] = ReinforcementLearnGrid3(wT, gamma, .8, 10, L, Qstate, Qaction, Qtbl);
+    [~, Qtbl2, Srl] = ReinforcementLearnGrid(wT, gamma, .8, 1000, L, Qstate, Qaction, Qtbl);
     if Del >= min(Dels)
         theta = theta*5;
     end
