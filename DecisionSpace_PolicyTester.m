@@ -11,9 +11,9 @@ end
 
 %% test accuracy of this policy against training data 
 disp('Computing training accuracy...')
-train_result = false(height(Srec),1);
-for trl = 1:width(Srec)
-    Strl = Srec(:,trl); Atrl = Arec(:,trl);
+train_result = false(width(Ssess),1);
+for trl = 1:width(Ssess)
+    Strl = Ssess(:,trl); Atrl = Asess(:,trl);
     StInd = find(Strl); 
     Apred = Abest(StInd);
     train_result(trl) = Apred == Atrl;
