@@ -9,7 +9,7 @@ load("data_all_trials.mat")
 
 %% setup MDP structure without reward
 StateNames = ["Choice"; "Force Low"; "Force High"]; 
-ActNames = ["To Low"; "To High"]; 
+ActNames = ["To Low"; "To High"; "Other"]; 
 MDP = createMDP(StateNames, ActNames);
 
 % Choice -> Low -> Choice or Force 
@@ -28,10 +28,16 @@ MDP.T(3,1:3,2) = [.5, .25, .25];
 % Force High -> Low -> Force High 
 MDP.T(3,3,1) = 1;
 
+% Any -> Other -> Same 
+MDP.T(1,1,3) = 1;
+MDP.T(2,2,3) = 1;
+MDP.T(3,3,3) = 1;
+
 % MDP.TerminalStates = [];
 
 %% setup 
 gamma = .5;
+epochdur = 5; % s
 ind1 = randi(length(data_all_trials)); 
 
 %% get muE of actual data 
@@ -40,18 +46,23 @@ muE = zeros(length(StateNames), length(dtas));
 Ssess = []; Asess = [];
 for ind2 = 1:length(dtas)
     dta = dtas(ind2);
+    dtadur = cellfun(@(t)max(t)-min(t), dta.time);
     Srec = []; Arec = []; 
-    choicetrl = dta.task_cond == 0;  
+    choicetrl = dta.task_cond == 0; 
     for trl = 1:(length(dta.task_cond))
+        nEpoch = round(dtadur(trl)/epochdur);
         if choicetrl(trl)
             cueChosen = dta.choice(trl); 
-            Arec = [Arec, cueChosen+1];
-            Srec = [Srec, [1; 0; 0]]; % one-hot encoding 
+            Atrl = cueChosen+1;
+            Strl = [1; 0; 0]; % one-hot encoding 
         else
             cueForced = dta.tgt_cond(trl);
-            Arec = [Arec, cueForced+1];
-            Srec = [Srec, [0; ~cueForced; cueForced]];
+            Atrl = cueForced+1;
+            Strl = [0; ~cueForced; cueForced];
         end
+        % add epochs of other action + no state change
+        Arec = [Arec, 3*ones(1,nEpoch-1), Atrl];
+        Srec = [Srec, repmat(Strl,1,nEpoch)];
     end
     Gamma = gamma.^(0:(size(Srec,2)-1));
     muE(:,ind2) = Srec * Gamma';
