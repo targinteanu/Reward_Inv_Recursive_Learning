@@ -4,20 +4,31 @@
 % A helper function at the bottom manages the Q learning step. 
 % This does not call external functions except for loading the data below. 
 
-data_all_trials = Load_Analyzed_Data();
+%data_all_trials = Load_Analyzed_Data();
+load("data_all_trials.mat")
 
 %% setup MDP structure without reward
-MDP = createMDP(["Choice"; "At Low"; "At High"; "Wait"], ["To Low"; "To High"; "Fixate"]);
-MDP.T(1,2,1) = 1; 
-MDP.T(1,3,2) = 1; 
-MDP.T(2,1,3) = 1; 
-MDP.T(3,1,3) = 1;
-MDP.T(2,4,[1,2]) = 1;
-MDP.T(3,4,[1,2]) = 1;
-MDP.T(1,1,3) = 1;
-MDP.T(4,1,3) = 1;
-MDP.T(4,4,[1,2]) = 1;
-% MDP.TerminalStates = ["At Low"; "At High"];
+StateNames = ["Choice"; "Force Low"; "Force High"]; 
+ActNames = ["To Low"; "To High"]; 
+MDP = createMDP(StateNames, ActNames);
+
+% Choice -> Low -> Choice or Force 
+MDP.T(1,1:3,1) = [.5, .25, .25]; 
+
+% Choice -> High -> Choice or Force
+MDP.T(1,1:3,2) = [.5, .25, .25]; 
+
+% Force Low -> Low -> Choice or Force 
+MDP.T(2,1:3,1) = [.5, .25, .25]; 
+% Force Low -> High -> Force Low 
+MDP.T(2,2,2) = 1; 
+
+% Force High -> High -> Choice or Force 
+MDP.T(3,1:3,2) = [.5, .25, .25]; 
+% Force High -> Low -> Force High 
+MDP.T(3,3,1) = 1;
+
+% MDP.TerminalStates = [];
 
 %% setup 
 gamma = .5;
@@ -25,21 +36,21 @@ ind1 = randi(length(data_all_trials));
 
 %% get muE of actual data 
 dtas = data_all_trials{ind1}; 
-muE = zeros(4, length(dtas)); 
+muE = zeros(length(StateNames), length(dtas)); 
 Ssess = []; Asess = [];
 for ind2 = 1:length(dtas)
     dta = dtas(ind2);
     Srec = []; Arec = []; 
-    choicetrl = dta.task_cond == 0; % choice trials only 
+    choicetrl = dta.task_cond == 0;  
     for trl = 1:(length(dta.task_cond))
         if choicetrl(trl)
-            % started with fixation 
-            Arec = [Arec, 3]; 
-            Srec = [Srec, [1; 0; 0; 0]];
-            
             cueChosen = dta.choice(trl); 
             Arec = [Arec, cueChosen+1];
-            Srec = [Srec, [0; ~cueChosen; cueChosen; 0]]; % one-hot encoding 
+            Srec = [Srec, [1; 0; 0]]; % one-hot encoding 
+        else
+            cueForced = dta.tgt_cond(trl);
+            Arec = [Arec, cueForced+1];
+            Srec = [Srec, [0; ~cueForced; cueForced]];
         end
     end
     Gamma = gamma.^(0:(size(Srec,2)-1));
@@ -49,24 +60,19 @@ end
 muE = mean(muE, 2); 
 
 %% init: randomize pi0 and get mu0
-mu0 = zeros(4,length(dtas));
+mu0 = zeros(length(StateNames),length(dtas));
 for ind2 = 1:length(dtas)
-    Sapp = [1;0;0;0]; Strl = Sapp; % start 
+    Sapp = strcmp(MDP.CurrentState, MDP.States); Strl = Sapp; % start 
+    StrlIdx = find(Strl);
     Aapp = [];
     for trl = 1:min(size(Srec,2),100)
-        Atrl = randi(3); Aapp = [Aapp, Atrl]; 
-        % 1 = low (cueChosen = 0); 2 = high (cueChosen = 1)
-        cueChosen = Atrl-1; 
-        if find(Strl) == 1
-            % at start 
-            Sapp = [Sapp, [0; ~cueChosen; cueChosen; 0]];
-        elseif Atrl == 3
-            % goes back to start 
-            Sapp = [Sapp, [1; 0; 0; 0]];
-        else
-            % nothing 
-            Sapp = [Sapp, [0; 0; 0; 1]];
-        end
+        Atrl = randi(length(ActNames)); Aapp = [Aapp, Atrl]; 
+        StrlOpts = MDP.T(StrlIdx,:,Atrl);
+        StrlOpts = cumsum(StrlOpts);
+        StrlIdx = rand < StrlOpts; 
+        StrlIdx = find(StrlIdx); StrlIdx = StrlIdx(1); 
+        Strl = zeros(size(StateNames)); Strl(StrlIdx) = 1;
+        Sapp = [Sapp, Strl];
     end
     Gamma = gamma.^(0:(size(Sapp,2)-1));
     mu0(:,ind2) = Sapp * Gamma';
@@ -94,7 +100,7 @@ Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
             Dels = [Dels, Del];
             Qtbls = [Qtbls; Qtbl];
         %else
-        Srl = zeros(4, length(Sind));
+        Srl = zeros(length(StateNames), length(Sind));
         for si = 1:length(Sind)
             Srl(Sind(si),si) = 1;
         end
@@ -112,15 +118,17 @@ mu2 = muE - m;
 M = MT(:,2:end);
 lambda = quadprog(M'*M, M'*muE, -eye(size(M,2)), zeros(size(M,2),1), ones(1,size(M,2)), 1);
 mu = MT(:,2:end)*lambda;
+Qtbl = Qtbl{1};
 Qtbls = [rand(size(Qtbl)); Qtbls];
 Qtbl = zeros(size(Qtbl));
 for i = 1:length(Qtbls)
     Qtbl = Qtbl + lambda(i)*Qtbls{i};
 end
+Qtbls = [Qtbls; Qtbl];
 
 %%
 function [QTable, StateSim] = doRL(MDP, w, gamma, alpha, epsilon, depsilon)
-%% add reward to MDP 
+% add reward to MDP 
 % since phi is a one-hot encoding of state, w(s) = R(s) 
 for s = 1:length(w)
     for s_orig = 1:length(MDP.States)
@@ -132,7 +140,7 @@ for s = 1:length(w)
     end
 end
 
-%% Q learn 
+% Q learn 
 env = rlMDPEnv(MDP);
 env.ResetFcn = @() 1;
 
