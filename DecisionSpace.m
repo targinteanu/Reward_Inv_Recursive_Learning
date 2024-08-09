@@ -72,11 +72,11 @@ muE = mean(muE, 2);
 
 %% init: randomize pi0 and get mu0
 mu0 = zeros(length(StateNames),length(dtas));
-for ind2 = 1:length(dtas)
+for ind2 = 1:1000
     Sapp = strcmp(MDP.CurrentState, MDP.States); Strl = Sapp; % start 
     StrlIdx = find(Strl);
     Aapp = [];
-    for trl = 1:min(size(Srec,2),100)
+    for trl = 1:100
         Atrl = randi(length(ActNames)); Aapp = [Aapp, Atrl]; 
         StrlOpts = MDP.T(StrlIdx,:,Atrl);
         StrlOpts = cumsum(StrlOpts);
@@ -91,7 +91,7 @@ end
 mu0 = mean(mu0, 2);
 
 %% iterate until policy convergence 
-Del = inf; theta = .001;
+Del = inf; theta0 = .001; theta = theta0;
 MT = [muE, mu0]; YT = [1, 0];
 Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
 
@@ -105,7 +105,9 @@ Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
         % step 4: get pi, mu 
         [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
         if Del >= min(Dels)
-            theta = theta*5;
+            theta = theta*2;
+        else
+            theta = theta0;
         end
         %if Del < min(Dels)
             Dels = [Dels, Del];
