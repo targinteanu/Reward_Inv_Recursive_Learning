@@ -8,7 +8,7 @@ dtas = data_all_trials{ind1};
 ind2 = randi(length(dtas)); 
 dta = dtas(ind2);
 
-zeta = .7; alpha = .9;
+zeta = .1; alpha = .9;
 getQ(dta, true, 0, 0, alpha, zeta);
 
 %% test all 
