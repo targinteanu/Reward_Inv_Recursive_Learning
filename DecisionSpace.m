@@ -93,7 +93,7 @@ mu0 = mean(mu0, 2);
 %% iterate until policy convergence 
 Del = inf; theta0 = .001; theta = theta0;
 MT = [muE, mu0]; YT = [1, 0];
-Qfuns = {}; Qtbls = {}; Dels = [Del]; Ssim = {};
+Qtbls = {}; Dels = [Del]; Ssim = {};
 
     while Del > theta
 
