@@ -36,8 +36,8 @@ MDP.T(3,3,3) = 1;
 % MDP.TerminalStates = [];
 
 %% setup 
-gamma = .5;
-epochdur = 5; % s
+gamma = .9;
+epochdur = 1; % s
 ind1 = randi(length(data_all_trials)); 
 
 %% get muE of actual data 
@@ -76,7 +76,7 @@ for ind2 = 1:1000
     Sapp = strcmp(MDP.CurrentState, MDP.States); Strl = Sapp; % start 
     StrlIdx = find(Strl);
     Aapp = [];
-    for trl = 1:100
+    for trl = 1:200
         Atrl = randi(length(ActNames)); Aapp = [Aapp, Atrl]; 
         StrlOpts = MDP.T(StrlIdx,:,Atrl);
         StrlOpts = cumsum(StrlOpts);
@@ -103,7 +103,8 @@ Qtbls = {}; Dels = [Del]; Ssim = {};
         Del = abs(wT*(muE - MT(:,2:end))); Del = min(Del) 
 
         % step 4: get pi, mu 
-        [Qtbl, Sind] = doRL(MDP, wT, gamma, .8, 0.9, 0.1);
+        MDP2 = MDP;
+        [Qtbl, Sind] = doRL(MDP2, wT, gamma, .8, 0.9, 0.1);
         if Del >= min(Dels)
             theta = theta*2;
         else
@@ -146,9 +147,7 @@ function [QTable, StateSim] = doRL(MDP, w, gamma, alpha, epsilon, depsilon)
 for s = 1:length(w)
     for s_orig = 1:length(MDP.States)
         for a = 1:length(MDP.Actions)
-            if MDP.T(s_orig,s,a)
-                MDP.R(s_orig,s,a) = w(s); 
-            end
+            MDP.R(s_orig,s,a) = MDP.T(s_orig,s,a)*w(s); 
         end
     end
 end
